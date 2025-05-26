@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import CosmicVisualization from '@/components/CosmicVisualization';
 import { getCosmicData } from '@/services/cosmicService';
@@ -40,6 +40,13 @@ export default function ProfilePage() {
   const [insights, setInsights] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [windowWidth, setWindowWidth] = useState(0);
+  const [windowHeight, setWindowHeight] = useState(0);
+
+  useEffect(() => {
+    setWindowWidth(window.innerWidth);
+    setWindowHeight(window.innerHeight);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -110,13 +117,13 @@ export default function ProfilePage() {
             key={i}
             className="absolute w-1 h-1 bg-white rounded-full"
             initial={{
-              x: Math.random() * window.innerWidth,
-              y: Math.random() * window.innerHeight,
+              x: Math.random() * windowWidth,
+              y: Math.random() * windowHeight,
               scale: Math.random() * 2,
               opacity: Math.random()
             }}
             animate={{
-              y: [null, Math.random() * window.innerHeight],
+              y: [null, Math.random() * windowHeight],
               opacity: [null, Math.random()],
               scale: [null, Math.random() * 2]
             }}
@@ -253,9 +260,9 @@ export default function ProfilePage() {
 
           {error && (
             <motion.div
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-red-400 text-center mb-8 p-4 bg-red-900/20 rounded-lg border border-red-500/50"
+              className="text-red-500 text-center mb-8"
             >
               {error}
             </motion.div>
@@ -267,8 +274,53 @@ export default function ProfilePage() {
               animate={{ opacity: 1, y: 0 }}
               className="space-y-8"
             >
-              <CosmicVisualization data={cosmicData} />
-              
+              <div className="relative group">
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200" />
+                <div className="relative bg-black p-8 rounded-lg">
+                  <h2 className="text-2xl font-bold mb-4 bg-gradient-to-r from-purple-400 to-pink-400 text-transparent bg-clip-text">
+                    Your Birth Star
+                  </h2>
+                  <div className="space-y-2">
+                    <p><span className="text-purple-400">Name:</span> {cosmicData.birthStar.name}</p>
+                    <p><span className="text-purple-400">Type:</span> {cosmicData.birthStar.type}</p>
+                    <p><span className="text-purple-400">Distance:</span> {cosmicData.birthStar.distance} light years</p>
+                    <p><span className="text-purple-400">Temperature:</span> {cosmicData.birthStar.temperature}K</p>
+                    <p><span className="text-purple-400">Age:</span> {cosmicData.birthStar.age} billion years</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="relative group">
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200" />
+                <div className="relative bg-black p-8 rounded-lg">
+                  <h2 className="text-2xl font-bold mb-4 bg-gradient-to-r from-purple-400 to-pink-400 text-transparent bg-clip-text">
+                    Cosmic Elements
+                  </h2>
+                  <div className="grid grid-cols-2 gap-4">
+                    {cosmicData.cosmicElements.map((element) => (
+                      <div key={element.symbol} className="p-4 rounded bg-gray-900">
+                        <p className="text-xl font-bold text-purple-400">{element.symbol}</p>
+                        <p className="text-sm text-gray-400">{element.name}</p>
+                        <p className="text-sm">Abundance: {element.abundance}%</p>
+                        <p className="text-sm">Type: {element.type}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="relative group">
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200" />
+                <div className="relative bg-black p-8 rounded-lg">
+                  <h2 className="text-2xl font-bold mb-4 bg-gradient-to-r from-purple-400 to-pink-400 text-transparent bg-clip-text">
+                    Radiation Profile
+                  </h2>
+                  <p className="text-lg">Level: {cosmicData.radiationLevel}</p>
+                  <p className="text-sm text-gray-400">Source: {cosmicData.source}</p>
+                  <p className="text-sm text-gray-400">Timestamp: {cosmicData.timestamp}</p>
+                </div>
+              </div>
+
               {narrative && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
@@ -277,10 +329,10 @@ export default function ProfilePage() {
                 >
                   <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200" />
                   <div className="relative bg-black p-8 rounded-lg">
-                    <h2 className="text-3xl font-bold mb-6 bg-gradient-to-r from-purple-400 to-pink-400 text-transparent bg-clip-text">
+                    <h2 className="text-2xl font-bold mb-4 bg-gradient-to-r from-purple-400 to-pink-400 text-transparent bg-clip-text">
                       Your Cosmic Story
                     </h2>
-                    <p className="text-lg text-gray-300 whitespace-pre-line">{narrative}</p>
+                    <p className="text-lg leading-relaxed">{narrative}</p>
                   </div>
                 </motion.div>
               )}
@@ -293,62 +345,13 @@ export default function ProfilePage() {
                 >
                   <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200" />
                   <div className="relative bg-black p-8 rounded-lg">
-                    <h2 className="text-3xl font-bold mb-6 bg-gradient-to-r from-purple-400 to-pink-400 text-transparent bg-clip-text">
+                    <h2 className="text-2xl font-bold mb-4 bg-gradient-to-r from-purple-400 to-pink-400 text-transparent bg-clip-text">
                       Cosmic Insights
                     </h2>
-                    <p className="text-lg text-gray-300 whitespace-pre-line">{insights}</p>
+                    <p className="text-lg leading-relaxed">{insights}</p>
                   </div>
                 </motion.div>
               )}
-              
-              <div className="relative group">
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200" />
-                <div className="relative bg-black p-8 rounded-lg">
-                  <h2 className="text-3xl font-bold mb-6 bg-gradient-to-r from-purple-400 to-pink-400 text-transparent bg-clip-text">
-                    Your Cosmic Profile
-                  </h2>
-                  <div className="space-y-6">
-                    <div>
-                      <h3 className="text-xl font-semibold mb-3">Birth Star</h3>
-                      <div className="bg-gray-900/50 p-4 rounded-lg border border-purple-500/20">
-                        <p className="text-lg">{cosmicData.birthStar.name} ({cosmicData.birthStar.type})</p>
-                        <p className="text-gray-400 mt-2">
-                          Distance: {cosmicData.birthStar.distance} light years
-                          <br />
-                          Temperature: {cosmicData.birthStar.temperature}K
-                          <br />
-                          Age: {cosmicData.birthStar.age} billion years
-                        </p>
-                      </div>
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-semibold mb-3">Cosmic Elements</h3>
-                      <div className="grid grid-cols-2 gap-4">
-                        {cosmicData.cosmicElements.map((element) => (
-                          <div key={element.name} className="bg-gray-900/50 p-4 rounded-lg border border-purple-500/20">
-                            <p className="text-lg">
-                              <span className="font-bold text-purple-400">{element.symbol}</span> - {element.name}
-                            </p>
-                            <p className="text-gray-400 mt-2">
-                              Abundance: {element.abundance}%
-                              <br />
-                              Type: {element.type}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-semibold mb-3">Radiation Level</h3>
-                      <div className="bg-gray-900/50 p-4 rounded-lg border border-purple-500/20">
-                        <p className="text-2xl font-bold text-purple-400">
-                          {cosmicData.radiationLevel.toFixed(2)}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
             </motion.div>
           )}
         </motion.div>
