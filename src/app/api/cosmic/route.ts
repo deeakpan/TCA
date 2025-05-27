@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getUserData } from '@/lib/cosmicStore';
 
 // Enhanced star data with real astronomical information
 const stars = [
@@ -223,21 +224,48 @@ async function getCTRNGNumber(min: number, max: number): Promise<number> {
 }
 
 // Function to determine birth star based on date and cTRNG
-async function determineBirthStar(birthDate: string): Promise<typeof stars[0]> {
+async function determineBirthStar(birthDate: string): Promise<{
+  name: string;
+  type: string;
+  distance: number;
+  mass: number;
+  temperature: number;
+  age: number;
+  elements: string[];
+}> {
   console.log('Determining birth star for date:', birthDate);
   
-  // Get a large random number for better distribution
-  const randomNum = await getCTRNGNumber(0, 1000000);
-  const index = Math.floor((randomNum / 1000000) * stars.length);
-  
-  const selectedStar = stars[index];
-  console.log('Selected birth star:', { 
-    randomNum,
-    index, 
-    star: selectedStar.name,
-    totalStars: stars.length 
-  });
-  return selectedStar;
+  // Get random numbers for star properties
+  const [distanceNum, tempNum, ageNum] = await Promise.all([
+    getCTRNGNumber(1, 1000), // Distance: 1-1000 light years
+    getCTRNGNumber(2000, 15000), // Temperature: 2000-15000K
+    getCTRNGNumber(1, 15000) // Age: 1-15000 million years
+  ]);
+
+  // Generate a random star name using cTRNG
+  const starNames = ['Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon', 'Zeta', 'Eta', 'Theta', 'Iota', 'Kappa'];
+  const nameIndex = Math.floor(await getCTRNGNumber(0, starNames.length));
+  const starNumber = await getCTRNGNumber(1, 100);
+  const name = `${starNames[nameIndex]} ${starNumber}`;
+
+  // Generate a random star type using cTRNG
+  const starTypes = ['O', 'B', 'A', 'F', 'G', 'K', 'M'];
+  const typeIndex = Math.floor(await getCTRNGNumber(0, starTypes.length));
+  const subtype = await getCTRNGNumber(0, 9);
+  const type = `${starTypes[typeIndex]}${subtype}V`;
+
+  // Convert age from million years to billion years
+  const age = ageNum / 1000;
+
+  return {
+    name,
+    type,
+    distance: distanceNum,
+    mass: 0.5 + (await getCTRNGNumber(0, 20)) / 10, // 0.5-2.5 solar masses
+    temperature: tempNum,
+    age,
+    elements: ['Hydrogen', 'Helium', 'Oxygen', 'Carbon', 'Iron'] // Base elements all stars have
+  };
 }
 
 // Function to determine cosmic elements based on cTRNG and star data
@@ -299,13 +327,25 @@ export async function POST(request: Request) {
     console.log('Request body:', body);
     const { birthDate, birthTime, birthLocation } = body;
 
+    // Get the unique ID from headers
+    const uniqueId = request.headers.get('x-cosmic-id');
+    if (!uniqueId) {
+      return NextResponse.json(
+        { error: 'Missing cosmic ID' },
+        { status: 400 }
+      );
+    }
+
+    // Get current count using shared store
+    const userData = getUserData(uniqueId);
+
     // Get cosmic data using cTRNG
     console.log('Fetching cosmic data...');
     const birthStar = await determineBirthStar(birthDate);
     const cosmicElements = await determineCosmicElements(birthStar);
     const radiationLevel = calculateRadiationLevel(birthStar, cosmicElements);
 
-    // Format response to match visualization component's expected structure
+    // Format response with current count
     const response = {
       birthStar: {
         name: String(birthStar.name),
@@ -323,7 +363,9 @@ export async function POST(request: Request) {
       })),
       radiationLevel: Number(radiationLevel),
       timestamp: new Date().toISOString(),
-      source: 'cTRNG'
+      source: 'cTRNG',
+      currentCount: userData.count,
+      remainingRequests: Math.max(0, 3 - userData.count)
     };
     
     console.log('Sending response:', JSON.stringify(response, null, 2));

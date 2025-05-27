@@ -25,15 +25,16 @@ export default function Home() {
               x: Math.random() * windowWidth,
               y: Math.random() * windowHeight,
               scale: Math.random() * 2,
-              opacity: Math.random()
+              opacity: Math.random() * 0.5 + 0.5
             }}
             animate={{
+              x: [null, Math.random() * windowWidth],
               y: [null, Math.random() * windowHeight],
-              opacity: [null, Math.random()],
+              opacity: [null, Math.random() * 0.5 + 0.5],
               scale: [null, Math.random() * 2]
             }}
             transition={{
-              duration: Math.random() * 10 + 10,
+              duration: Math.random() * 15 + 15,
               repeat: Infinity,
               ease: "linear"
             }}
@@ -89,8 +90,8 @@ export default function Home() {
               </Link>
               <Link 
                 href="https://blog.spacecomputer.io/cypherpunk-cosmic-randomness-ctrng-beta-now-live/"
-                target="_blank"
-                rel="noopener noreferrer"
+            target="_blank"
+            rel="noopener noreferrer"
                 className="font-geist-sans inline-block px-6 py-3 border border-purple-500 rounded-lg text-base hover:bg-purple-500/10 transition-all"
               >
                 Learn More
@@ -180,7 +181,7 @@ export default function Home() {
               <Link 
                 href="/terms"
                 className="font-geist-sans text-gray-400 hover:text-gray-300 transition-colors"
-              >
+          >
                 Terms of Service
               </Link>
               <span className="text-gray-600">•</span>
@@ -190,10 +191,10 @@ export default function Home() {
               >
                 Privacy Policy
               </Link>
-            </div>
+        </div>
           </motion.div>
         </motion.div>
       </main>
     </div>
   );
-} 
+}
