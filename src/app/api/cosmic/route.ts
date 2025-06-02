@@ -101,6 +101,9 @@ let tokenCache = {
   expiresAt: 0
 };
 
+// Request deduplication cache
+let pendingRequest: Promise<string> | null = null;
+
 // Function to get access token from Auth0 with caching
 async function getAccessToken(): Promise<string> {
   const now = Date.now();
@@ -111,68 +114,65 @@ async function getAccessToken(): Promise<string> {
     return tokenCache.token;
   }
 
+  // If there's a pending request, return its result
+  if (pendingRequest) {
+    console.log('Reusing pending token request...');
+    return pendingRequest;
+  }
+
   const authUrl = process.env.ORBITPORT_API_URL;
   const clientId = process.env.ORBITPORT_CLIENT_ID;
   const clientSecret = process.env.ORBITPORT_CLIENT_SECRET;
-
-  console.log('Auth0 Request:', {
-    url: authUrl,
-    hasClientId: !!clientId,
-    hasClientSecret: !!clientSecret
-  });
 
   if (!authUrl || !clientId || !clientSecret) {
     throw new Error('Missing Orbitport credentials');
   }
 
   try {
-    const response = await fetch(`${authUrl}/oauth/token`, {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({
-        client_id: clientId,
-        client_secret: clientSecret,
-        audience: 'https://op.spacecomputer.io/api',
-        grant_type: 'client_credentials',
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Auth0 Error Response:', {
-        status: response.status,
-        statusText: response.statusText,
-        body: errorText
+    // Create the request promise
+    pendingRequest = (async () => {
+      const response = await fetch(`${authUrl}/oauth/token`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          client_id: clientId,
+          client_secret: clientSecret,
+          audience: 'https://op.spacecomputer.io/api',
+          grant_type: 'client_credentials',
+        }),
       });
-      throw new Error(`Failed to get access token: ${response.status} ${response.statusText}`);
-    }
 
-    const data = await response.json();
-    console.log('Auth0 Success Response:', {
-      hasAccessToken: !!data.access_token,
-      tokenType: data.token_type,
-      expiresIn: data.expires_in
-    });
+      if (!response.ok) {
+        throw new Error(`Failed to get access token: ${response.status} ${response.statusText}`);
+      }
 
-    // Cache the token
-    tokenCache = {
-      token: data.access_token,
-      expiresAt: now + (data.expires_in * 1000)
-    };
+      const data = await response.json();
+      
+      // Cache the token
+      tokenCache = {
+        token: data.access_token,
+        expiresAt: now + (data.expires_in * 1000)
+      };
 
-    return data.access_token;
+      return data.access_token;
+    })();
+
+    const token = await pendingRequest;
+    return token;
   } catch (error) {
     console.error('Auth0 Request Failed:', error);
     throw error;
+  } finally {
+    pendingRequest = null;
   }
 }
 
-// Function to get random number using cTRNG
-async function getCTRNGNumber(min: number, max: number): Promise<number> {
+// Function to get multiple random numbers in a single cTRNG call
+async function getCTRNGNumbers(count: number, ranges: { min: number; max: number }[]): Promise<number[]> {
   try {
-    console.log('Getting cTRNG number...');
+    console.log('Getting cTRNG numbers...');
     const accessToken = await getAccessToken();
     
     const trngUrl = `${process.env.ORBITPORT_AUTH_URL}/api/v1/services/trng`;
@@ -185,41 +185,35 @@ async function getCTRNGNumber(min: number, max: number): Promise<number> {
     });
     
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('cTRNG Error Response:', {
-        status: response.status,
-        statusText: response.statusText,
-        body: errorText
-      });
       throw new Error(`Failed to fetch cTRNG data: ${response.status} ${response.statusText}`);
     }
     
     const data = await response.json();
-    console.log('cTRNG Success Response:', {
-      service: data.service,
-      source: data.src,
-      hasData: !!data.data,
-      hasSignature: !!data.signature
-    });
-
     const randomHex = data.data;
-    const randomNumber = parseInt(randomHex, 16);
-    const result = min + (randomNumber % (max - min));
     
-    console.log('Random Number Calculation:', {
-      hex: randomHex,
-      decimal: randomNumber,
-      min,
-      max,
+    // Split the hex string into chunks for each number
+    const chunkSize = Math.floor(randomHex.length / count);
+    const results: number[] = [];
+    
+    for (let i = 0; i < count; i++) {
+      const hexChunk = randomHex.slice(i * chunkSize, (i + 1) * chunkSize);
+      const randomNumber = parseInt(hexChunk, 16);
+      const { min, max } = ranges[i];
+      const result = min + (randomNumber % (max - min));
+      results.push(result);
+    }
+    
+    console.log('Random Numbers Generated:', results.map((result, i) => ({
+      min: ranges[i].min,
+      max: ranges[i].max,
       result
-    });
+    })));
     
-    return result;
+    return results;
   } catch (error) {
     console.error('cTRNG Request Failed:', error);
-    const fallbackResult = min + Math.random() * (max - min);
-    console.log('Using fallback random number:', fallbackResult);
-    return fallbackResult;
+    // Fallback to Math.random
+    return ranges.map(({ min, max }) => min + Math.random() * (max - min));
   }
 }
 
@@ -235,47 +229,52 @@ async function determineBirthStar(birthDate: string): Promise<{
 }> {
   console.log('Determining birth star for date:', birthDate);
   
-  // Get random numbers for star properties
-  const [distanceNum, tempNum, ageNum] = await Promise.all([
-    getCTRNGNumber(1, 1000), // Distance: 1-1000 light years
-    getCTRNGNumber(2000, 15000), // Temperature: 2000-15000K
-    getCTRNGNumber(1, 15000) // Age: 1-15000 million years
+  // Get all random numbers in a single request
+  const [distance, temp, age, nameIndex, starNumber, typeIndex, subtype, massIndex] = await getCTRNGNumbers(8, [
+    { min: 1, max: 1000 },      // Distance
+    { min: 2000, max: 15000 },  // Temperature
+    { min: 1, max: 15000 },     // Age
+    { min: 0, max: 10 },        // Name index
+    { min: 1, max: 100 },       // Star number
+    { min: 0, max: 7 },         // Star type index
+    { min: 0, max: 9 },         // Star subtype
+    { min: 0, max: 20 }         // Mass index
   ]);
 
-  // Generate a random star name using cTRNG
+  // Generate star name
   const starNames = ['Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon', 'Zeta', 'Eta', 'Theta', 'Iota', 'Kappa'];
-  const nameIndex = Math.floor(await getCTRNGNumber(0, starNames.length));
-  const starNumber = await getCTRNGNumber(1, 100);
-  const name = `${starNames[nameIndex]} ${starNumber}`;
+  const name = `${starNames[Math.floor(nameIndex)]} ${Math.floor(starNumber)}`;
 
-  // Generate a random star type using cTRNG
+  // Generate star type
   const starTypes = ['O', 'B', 'A', 'F', 'G', 'K', 'M'];
-  const typeIndex = Math.floor(await getCTRNGNumber(0, starTypes.length));
-  const subtype = await getCTRNGNumber(0, 9);
-  const type = `${starTypes[typeIndex]}${subtype}V`;
+  const type = `${starTypes[Math.floor(typeIndex)]}${Math.floor(subtype)}V`;
 
   // Convert age from million years to billion years
-  const age = ageNum / 1000;
+  const ageInBillionYears = age / 1000;
 
   return {
     name,
     type,
-    distance: distanceNum,
-    mass: 0.5 + (await getCTRNGNumber(0, 20)) / 10, // 0.5-2.5 solar masses
-    temperature: tempNum,
-    age,
+    distance: distance,
+    mass: 0.5 + (massIndex / 10), // 0.5-2.5 solar masses
+    temperature: temp,
+    age: ageInBillionYears,
     elements: ['Hydrogen', 'Helium', 'Oxygen', 'Carbon', 'Iron'] // Base elements all stars have
   };
 }
 
-// Function to determine cosmic elements based on cTRNG and star data
+// Function to determine cosmic elements
 async function determineCosmicElements(birthStar: typeof stars[0]): Promise<typeof cosmicElements[0][]> {
   console.log('Determining cosmic elements...');
   
-  // Get number of elements to select (3-6)
-  const numElements = Math.floor(await getCTRNGNumber(3, 7));
-  console.log('Number of elements to select:', numElements);
-  
+  // Get number of elements and their indices in a single request
+  const [numElements, ...elementIndices] = await getCTRNGNumbers(4, [
+    { min: 3, max: 7 },         // Number of elements
+    { min: 0, max: cosmicElements.length },  // First element
+    { min: 0, max: cosmicElements.length },  // Second element
+    { min: 0, max: cosmicElements.length }   // Third element
+  ]);
+
   // Create a weighted pool of elements based on the birth star's elements
   const elementPool = cosmicElements.filter(element => 
     birthStar.elements.includes(element.name)
@@ -288,18 +287,26 @@ async function determineCosmicElements(birthStar: typeof stars[0]): Promise<type
       fullPool.push(element);
     }
   });
-  
-  const elements = new Set<typeof cosmicElements[0]>();
-  
-  while (elements.size < numElements) {
-    const randomNum = await getCTRNGNumber(0, 1000000);
-    const index = Math.floor((randomNum / 1000000) * fullPool.length);
-    elements.add(fullPool[index]);
+
+  // Use the random indices to select elements from the pool
+  const selectedElements = elementIndices
+    .map(index => fullPool[Math.floor(index % fullPool.length)])
+    .filter((element, index, self) => 
+      // Remove duplicates
+      index === self.findIndex(e => e.name === element.name)
+    );
+
+  // If we have fewer elements than requested, add more
+  while (selectedElements.length < numElements) {
+    const randomIndex = Math.floor(Math.random() * fullPool.length);
+    const element = fullPool[randomIndex];
+    if (!selectedElements.some(e => e.name === element.name)) {
+      selectedElements.push(element);
+    }
   }
-  
-  const result = Array.from(elements);
-  console.log('Selected cosmic elements:', result.map(e => e.name));
-  return result;
+
+  console.log('Selected cosmic elements:', selectedElements.map(e => e.name));
+  return selectedElements;
 }
 
 // Function to calculate radiation level based on star and elements

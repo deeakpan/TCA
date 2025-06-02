@@ -83,15 +83,15 @@ export default function Home() {
               className="flex items-center justify-center gap-4"
             >
               <Link 
-                href="/profile"
+                href="/cosmic-hub"
                 className="font-geist-sans inline-block px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg font-medium text-base hover:from-purple-500 hover:to-pink-500 transition-all transform hover:scale-105"
               >
-                Discover Your Profile
+                Enter the Cosmos
               </Link>
               <Link 
                 href="https://blog.spacecomputer.io/cypherpunk-cosmic-randomness-ctrng-beta-now-live/"
-            target="_blank"
-            rel="noopener noreferrer"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="font-geist-sans inline-block px-6 py-3 border border-purple-500 rounded-lg text-base hover:bg-purple-500/10 transition-all"
               >
                 Learn More
