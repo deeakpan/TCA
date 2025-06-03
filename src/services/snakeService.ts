@@ -6,6 +6,13 @@ export type Position = {
 
 export type Direction = 'UP' | 'DOWN' | 'LEFT' | 'RIGHT';
 
+export type Obstacle = {
+  position: Position;
+  type: 'green' | 'orange';  // Simplified to just two colors
+  lifetime: number;  // How long the obstacle exists
+  createdAt: number; // Timestamp when created
+};
+
 export type GameState = {
   snake: Position[];
   food: Position;
@@ -14,6 +21,10 @@ export type GameState = {
   gameOver: boolean;
   foodPositions: Position[];
   currentFoodIndex: number;
+  obstacles: Obstacle[];
+  lastObstacleSpawn: number;
+  lastPauseTime: number | null;  // Track when the game was paused
+  totalPausedTime: number;       // Track total time spent paused
 };
 
 // Constants
@@ -21,6 +32,8 @@ const GRID_SIZE = 20;
 const INITIAL_SNAKE = [{ x: Math.floor(GRID_SIZE / 2), y: Math.floor(GRID_SIZE / 2) }];
 const INITIAL_DIRECTION: Direction = 'RIGHT';
 const TICK_RATE = 200;
+const OBSTACLE_SPAWN_INTERVAL = 5000; // Spawn every 5 seconds
+const OBSTACLE_LIFETIME = 8000; // Obstacles last 8 seconds
 
 // Request deduplication cache
 let pendingRequest: Promise<Position[]> | null = null;
@@ -119,7 +132,7 @@ async function getRandomPositions(): Promise<Position[]> {
     console.error('Game API Request Failed:', error);
     console.log('Falling back to Math.random');
     // Fallback to Math.random if API fails
-    const fallbackPositions = Array(8).fill(null).map(() => ({
+    const fallbackPositions = Array(15).fill(null).map(() => ({
       x: Math.floor(Math.random() * GRID_SIZE),
       y: Math.floor(Math.random() * GRID_SIZE)
     }));
@@ -142,10 +155,79 @@ export async function initializeGame(): Promise<GameState> {
     score: 0,
     gameOver: false,
     foodPositions,
-    currentFoodIndex: 0
+    currentFoodIndex: 0,
+    obstacles: [],
+    lastObstacleSpawn: Date.now(),
+    lastPauseTime: null,
+    totalPausedTime: 0
   };
   console.log('Initial game state:', initialState);
   return initialState;
+}
+
+// Generate a new cosmic obstacle
+function generateObstacle(): Obstacle {
+  const types: Obstacle['type'][] = ['green', 'orange'];
+  const type = types[Math.floor(Math.random() * types.length)];
+  
+  let x, y;
+  do {
+    x = Math.floor(Math.random() * GRID_SIZE);
+    y = Math.floor(Math.random() * GRID_SIZE);
+  } while (
+    // Don't spawn on snake or food
+    INITIAL_SNAKE.some(pos => pos.x === x && pos.y === y)
+  );
+
+  return {
+    position: { x, y },
+    type,
+    lifetime: OBSTACLE_LIFETIME,
+    createdAt: Date.now()
+  };
+}
+
+// Update obstacles
+function updateObstacles(state: GameState, isPaused: boolean): GameState {
+  const now = Date.now();
+  
+  // Handle pause state
+  let newLastPauseTime = state.lastPauseTime;
+  let newTotalPausedTime = state.totalPausedTime;
+  
+  if (isPaused && !state.lastPauseTime) {
+    // Game just paused
+    newLastPauseTime = now;
+  } else if (!isPaused && state.lastPauseTime) {
+    // Game just unpaused
+    newTotalPausedTime += now - state.lastPauseTime;
+    newLastPauseTime = null;
+  }
+  
+  // Calculate effective time (current time minus total paused time)
+  const effectiveTime = now - newTotalPausedTime;
+  
+  // Remove expired obstacles using effective time
+  const activeObstacles = state.obstacles.filter(
+    obstacle => effectiveTime - (obstacle.createdAt - newTotalPausedTime) < obstacle.lifetime
+  );
+
+  // Spawn new obstacle if enough time has passed
+  let newObstacles = [...activeObstacles];
+  if (effectiveTime - (state.lastObstacleSpawn - newTotalPausedTime) >= OBSTACLE_SPAWN_INTERVAL) {
+    newObstacles.push({
+      ...generateObstacle(),
+      createdAt: effectiveTime + newTotalPausedTime // Adjust creation time for pause
+    });
+  }
+
+  return {
+    ...state,
+    obstacles: newObstacles,
+    lastObstacleSpawn: newObstacles.length > activeObstacles.length ? now : state.lastObstacleSpawn,
+    lastPauseTime: newLastPauseTime,
+    totalPausedTime: newTotalPausedTime
+  };
 }
 
 // Get next food position
@@ -154,8 +236,8 @@ export async function getNextFood(currentState: GameState): Promise<GameState> {
   let newFoodPositions = currentState.foodPositions;
   let newFoodIndex = currentState.currentFoodIndex + 1;
   
-  // If we're running out of food positions, fetch new ones
-  if (newFoodIndex >= 7) {
+  // If we're running out of food positions (at 14th position), fetch new ones
+  if (newFoodIndex >= 14) {
     console.log('Fetching new food positions...');
     try {
       const newPositions = await getRandomPositions();
@@ -178,7 +260,11 @@ export async function getNextFood(currentState: GameState): Promise<GameState> {
 }
 
 // Move snake
-export function moveSnake(state: GameState): GameState {
+export function moveSnake(state: GameState, isPaused: boolean): GameState {
+  if (isPaused) {
+    return state;
+  }
+
   console.log('Moving snake...', { currentDirection: state.direction });
   const head = { ...state.snake[0] };
   
@@ -200,10 +286,12 @@ export function moveSnake(state: GameState): GameState {
   
   console.log('New head position:', head);
   
-  // Check for collision with self
-  const hasCollision = state.snake.some(segment => 
-    segment.x === head.x && segment.y === head.y
-  );
+  // Check for collision with self or obstacles
+  const hasCollision = 
+    state.snake.some(segment => segment.x === head.x && segment.y === head.y) ||
+    state.obstacles.some(obstacle => 
+      obstacle.position.x === head.x && obstacle.position.y === head.y
+    );
   
   if (hasCollision) {
     console.log('Collision detected!');
@@ -220,13 +308,15 @@ export function moveSnake(state: GameState): GameState {
     newSnake.pop();
   }
   
-  const newState = {
+  // Update obstacles
+  const updatedState = updateObstacles({
     ...state,
     snake: newSnake,
     score: hasEatenFood ? state.score + 1 : state.score
-  };
-  console.log('New game state:', newState);
-  return newState;
+  }, isPaused);
+
+  console.log('New game state:', updatedState);
+  return updatedState;
 }
 
 // Change direction

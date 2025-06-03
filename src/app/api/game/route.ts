@@ -60,8 +60,17 @@ async function getAccessToken(): Promise<string> {
   }
 }
 
+// Function to check if a position is too close to existing positions
+function isTooClose(newPos: { x: number; y: number }, existingPositions: { x: number; y: number }[], minDistance: number = 3): boolean {
+  return existingPositions.some(pos => {
+    const dx = Math.abs(newPos.x - pos.x);
+    const dy = Math.abs(newPos.y - pos.y);
+    return dx < minDistance && dy < minDistance;
+  });
+}
+
 // Function to get random positions using cTRNG
-async function getRandomPositions(count: number = 8): Promise<{ x: number; y: number }[]> {
+async function getRandomPositions(count: number = 15): Promise<{ x: number; y: number }[]> {
   // If there's a pending request, return its result
   if (pendingRequest) {
     console.log('Reusing pending request...');
@@ -90,13 +99,44 @@ async function getRandomPositions(count: number = 8): Promise<{ x: number; y: nu
       const data = await response.json();
       const randomHex = data.data;
       
-      // Convert hex to positions
+      // Convert hex to positions with better distribution
       const positions: { x: number; y: number }[] = [];
+      const hexLength = 4; // Each position needs 4 hex chars (2 for x, 2 for y)
+      const totalHexNeeded = count * hexLength;
+      
+      // Ensure we have enough hex data
+      if (randomHex.length < totalHexNeeded) {
+        throw new Error(`Not enough random data: got ${randomHex.length} chars, need ${totalHexNeeded}`);
+      }
+      
+      // Generate positions with better distribution
       for (let i = 0; i < count; i++) {
-        const hexChunk = randomHex.slice(i * 8, (i + 1) * 8);
-        const x = parseInt(hexChunk.slice(0, 4), 16) % 20; // Grid size is 20
-        const y = parseInt(hexChunk.slice(4, 8), 16) % 20;
-        positions.push({ x, y });
+        let attempts = 0;
+        let newPos: { x: number; y: number };
+        
+        do {
+          const startIdx = i * hexLength;
+          const xHex = randomHex.slice(startIdx, startIdx + 2);
+          const yHex = randomHex.slice(startIdx + 2, startIdx + 4);
+          
+          // Avoid edges by keeping positions 2 spaces away from borders
+          const x = (parseInt(xHex, 16) % 16) + 2; // 2-17 instead of 0-19
+          const y = (parseInt(yHex, 16) % 16) + 2; // 2-17 instead of 0-19
+          
+          newPos = { x, y };
+          attempts++;
+          
+          // If we've tried too many times, use a fallback position
+          if (attempts > 5) {
+            newPos = {
+              x: Math.floor(Math.random() * 16) + 2,
+              y: Math.floor(Math.random() * 16) + 2
+            };
+            break;
+          }
+        } while (isTooClose(newPos, positions));
+        
+        positions.push(newPos);
       }
       
       console.log('Generated positions:', positions);
@@ -108,10 +148,17 @@ async function getRandomPositions(count: number = 8): Promise<{ x: number; y: nu
   } catch (error) {
     console.error('cTRNG Request Failed:', error);
     // Fallback to Math.random if API fails
-    const fallbackPositions = Array(count).fill(null).map(() => ({
-      x: Math.floor(Math.random() * 20),
-      y: Math.floor(Math.random() * 20)
-    }));
+    const fallbackPositions: { x: number; y: number }[] = [];
+    for (let i = 0; i < count; i++) {
+      let newPos: { x: number; y: number };
+      do {
+        newPos = {
+          x: Math.floor(Math.random() * 16) + 2,
+          y: Math.floor(Math.random() * 16) + 2
+        };
+      } while (isTooClose(newPos, fallbackPositions));
+      fallbackPositions.push(newPos);
+    }
     console.log('Fallback positions:', fallbackPositions);
     return fallbackPositions;
   } finally {
@@ -120,12 +167,14 @@ async function getRandomPositions(count: number = 8): Promise<{ x: number; y: nu
   }
 }
 
-export async function POST(request: Request) {
+export async function POST() {
   try {
-    const positions = await getRandomPositions();
+    console.log('Game API: Getting random positions...');
+    const positions = await getRandomPositions(15);
+    console.log('Game API: Positions received:', positions);
     return NextResponse.json({ positions });
   } catch (error) {
-    console.error('Error getting random positions:', error);
+    console.error('Game API Error:', error);
     return NextResponse.json(
       { error: 'Failed to get random positions' },
       { status: 500 }
