@@ -4,16 +4,20 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import dynamic from 'next/dynamic';
 import { FaPause, FaPlay } from 'react-icons/fa';
+import { ChevronUpIcon, ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon } from '@radix-ui/react-icons';
 
-// Dynamically import the game component to avoid SSR issues
-const SnakeGame = dynamic(() => import('@/components/SnakeGame'), {
-  ssr: false,
-  loading: () => (
-    <div className="w-full h-full flex items-center justify-center">
-      <div className="text-purple-400 animate-pulse">Loading cosmic game...</div>
-    </div>
-  )
-});
+// Dynamically import the game component to avoid SSR issues and ensure ref forwarding
+const SnakeGame = dynamic(
+  () => import('@/components/SnakeGame').then((mod) => mod.default),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full h-full flex items-center justify-center">
+        <div className="text-purple-400 animate-pulse">Loading cosmic game...</div>
+      </div>
+    )
+  }
+);
 
 export default function SnakeGamePage() {
   const [windowWidth, setWindowWidth] = useState(0);
@@ -106,8 +110,8 @@ export default function SnakeGamePage() {
         ))}
       </div>
 
-      {/* Score and Pause Controls */}
-      <div className="fixed top-4 right-4 z-50 flex items-center gap-4">
+      {/* Score and Pause Controls - Desktop */}
+      <div className="fixed top-4 right-4 z-50 hidden md:flex items-center gap-4">
         <div className="text-white text-sm font-medium bg-black/30 px-3 py-1.5 rounded-lg">
           Score: {score}
         </div>
@@ -119,25 +123,82 @@ export default function SnakeGamePage() {
         </button>
       </div>
 
-      <main className="container mx-auto px-4 pt-8 pb-8 relative z-10">
+      <main className="container mx-auto px-0 md:px-4 pt-8 pb-8 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="max-w-4xl mx-auto"
+          className="w-full md:max-w-4xl mx-auto"
         >
-          {/* Game container */}
-          <div className="w-full aspect-square max-w-md mx-auto bg-black/50 rounded-lg border border-purple-500/50 overflow-hidden">
-            <SnakeGame
-              isPaused={isPaused}
-              onScoreChange={setScore}
-              onRestart={handleRestart}
-              onPauseChange={setIsPaused}
-            />
+          {/* Game container with controls */}
+          <div className="flex flex-col md:items-center">
+            {/* Game container */}
+            <div className="w-full aspect-square md:max-w-md bg-black/50 border border-purple-500/50 overflow-hidden">
+              <SnakeGame
+                isPaused={isPaused}
+                onScoreChange={setScore}
+                onRestart={handleRestart}
+                onPauseChange={setIsPaused}
+              />
+            </div>
+
+            {/* Mobile Controls */}
+            <div className="w-full flex justify-between items-center px-4 mt-2 md:hidden">
+              {/* Score - Mobile */}
+              <div className="text-white text-sm font-medium bg-black/30 px-3 py-1.5 rounded-lg">
+                Score: {score}
+              </div>
+
+              {/* Pause - Mobile */}
+              <button
+                onClick={() => setIsPaused(prev => !prev)}
+                className="p-2 hover:text-purple-400 transition-colors"
+              >
+                {isPaused ? <FaPlay className="text-white" /> : <FaPause className="text-white" />}
+              </button>
+            </div>
+          </div>
+
+          {/* D-pad */}
+          <div className="mt-2 flex justify-center md:hidden">
+            <div className="grid grid-cols-3 gap-2 w-32">
+              <div className="col-start-2 flex justify-center">
+                <button 
+                  data-direction="UP"
+                  className="dpad-button w-10 h-10 flex items-center justify-center bg-purple-700/60 rounded-md hover:bg-purple-600/80 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-opacity-50"
+                >
+                  <ChevronUpIcon className="w-5 h-5 text-white" />
+                </button>
+              </div>
+              <div className="col-start-1 flex justify-center items-center">
+                <button 
+                  data-direction="LEFT"
+                  className="dpad-button w-10 h-10 flex items-center justify-center bg-purple-700/60 rounded-md hover:bg-purple-600/80 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-opacity-50"
+                >
+                  <ChevronLeftIcon className="w-5 h-5 text-white" />
+                </button>
+              </div>
+              <div className="col-start-3 flex justify-center items-center">
+                <button 
+                  data-direction="RIGHT"
+                  className="dpad-button w-10 h-10 flex items-center justify-center bg-purple-700/60 rounded-md hover:bg-purple-600/80 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-opacity-50"
+                >
+                  <ChevronRightIcon className="w-5 h-5 text-white" />
+                </button>
+              </div>
+              <div className="col-start-2 flex justify-center">
+                <button 
+                  data-direction="DOWN"
+                  className="dpad-button w-10 h-10 flex items-center justify-center bg-purple-700/60 rounded-md hover:bg-purple-600/80 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-opacity-50"
+                >
+                  <ChevronDownIcon className="w-5 h-5 text-white" />
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* Instructions */}
-          <div className="mt-8 text-center text-gray-400">
-            <p>Use arrow keys to control the serpent</p>
+          <div className="mt-6 text-center text-gray-400">
+            <p>Use arrow keys or D-pad to control the serpent</p>
             <p className="text-sm mt-2">Powered by SpaceComputer's True Random Number Generator</p>
           </div>
         </motion.div>

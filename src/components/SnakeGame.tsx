@@ -94,6 +94,34 @@ export default function SnakeGame({ isPaused, onScoreChange, onRestart, onPauseC
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [handleKeyPress]);
 
+  // Handle D-pad controls
+  useEffect(() => {
+    const dpadButtons = document.querySelectorAll('.dpad-button');
+    if (dpadButtons.length > 0) {
+      const handleButtonClick = (event) => {
+        if (!gameState || gameState.gameOver) return;
+
+        const direction = event.currentTarget.dataset.direction;
+        if (direction) {
+           if (isWaitingForFirstMove) {
+            setIsWaitingForFirstMove(false);
+          }
+          setGameState(prev => prev ? changeDirection(prev, direction as Direction) : null);
+        }
+      };
+
+      dpadButtons.forEach(button => {
+        button.addEventListener('click', handleButtonClick);
+      });
+
+      return () => {
+        dpadButtons.forEach(button => {
+          button.removeEventListener('click', handleButtonClick);
+        });
+      };
+    }
+  }, [gameState, isWaitingForFirstMove]); // Depend on gameState and isWaitingForFirstMove
+
   // Add new useEffect for wishing star timer
   useEffect(() => {
     if (wishingStar) {

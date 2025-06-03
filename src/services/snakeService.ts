@@ -236,17 +236,25 @@ export async function getNextFood(currentState: GameState): Promise<GameState> {
   let newFoodPositions = currentState.foodPositions;
   let newFoodIndex = currentState.currentFoodIndex + 1;
   
-  // If we're running out of food positions (at 14th position), fetch new ones
-  if (newFoodIndex >= 14) {
-    console.log('Fetching new food positions...');
-    try {
-      const newPositions = await getRandomPositions();
+  // If we're at the 14th position (index 13), start fetching new positions but don't wait
+  if (newFoodIndex === 13) {
+    console.log('Starting background fetch for next set of positions...');
+    // Start the fetch but don't await it
+    getRandomPositions().then(newPositions => {
+      console.log('New positions received in background:', newPositions);
+      // Update the positions for next time
       newFoodPositions = newPositions;
-      newFoodIndex = 0;
-    } catch (error) {
-      console.error('Failed to fetch new food positions:', error);
-      // Keep using existing positions if fetch fails
-    }
+    }).catch(error => {
+      console.error('Background fetch failed:', error);
+    });
+  }
+  
+  // If we're at the end of the array, wait for new positions
+  if (newFoodIndex >= newFoodPositions.length) {
+    console.log('Waiting for new positions...');
+    const newPositions = await getRandomPositions();
+    newFoodPositions = newPositions;
+    newFoodIndex = 0;
   }
   
   const newState = {
