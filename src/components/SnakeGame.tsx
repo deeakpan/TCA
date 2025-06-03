@@ -97,11 +97,11 @@ export default function SnakeGame({ isPaused, onScoreChange, onRestart, onPauseC
   // Add new useEffect for wishing star timer
   useEffect(() => {
     if (wishingStar) {
-      console.log('Starting 2-second timer for wishing star');
+      console.log('Starting 3-second timer for wishing star');
       const timer = setTimeout(() => {
-        console.log('2 seconds up - removing wishing star');
+        console.log('3 seconds up - removing wishing star');
         setWishingStar(null);
-      }, 2000);
+      }, 3000);  // Changed to 3 seconds
 
       return () => {
         console.log('Cleaning up wishing star timer');
@@ -124,7 +124,7 @@ export default function SnakeGame({ isPaused, onScoreChange, onRestart, onPauseC
     const gameLoop = async () => {
       console.log('Game loop tick...');
       // Move snake
-      const newState = moveSnake(gameState);
+      const newState = moveSnake(gameState, isPaused);
       
       // If food was eaten, get next food position
       if (newState.score > gameState.score) {
@@ -229,19 +229,29 @@ export default function SnakeGame({ isPaused, onScoreChange, onRestart, onPauseC
       }}>
         {/* Snake */}
         {gameState.snake.map((segment, index) => (
-          <div
+          <motion.div
             key={`${segment.x}-${segment.y}-${index}`}
-            className="bg-purple-500 rounded-sm"
+            className={`${index === 0 ? 'bg-purple-400' : 'bg-purple-500'} rounded-sm relative overflow-hidden`}
             style={{
               gridColumn: segment.x + 1,
               gridRow: segment.y + 1
             }}
-          />
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ duration: 0.1 }}
+          >
+            {index === 0 && (
+              <>
+                <div className="absolute inset-0 bg-purple-300 opacity-30 animate-pulse-glow" />
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-400/0 via-purple-400/30 to-purple-400/0 animate-shimmer" />
+              </>
+            )}
+          </motion.div>
         ))}
         
         {/* Food */}
         <motion.div
-          className="bg-pink-500 rounded-full"
+          className="relative"
           style={{
             gridColumn: gameState.food.x + 1,
             gridRow: gameState.food.y + 1
@@ -249,7 +259,61 @@ export default function SnakeGame({ isPaused, onScoreChange, onRestart, onPauseC
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ duration: 0.2 }}
-        />
+        >
+          <div className="absolute inset-0 bg-pink-500 rounded-full animate-pulse-glow" />
+          <div className="absolute inset-0 bg-pink-400 rounded-full blur-sm animate-pulse-glow" />
+          <div className="absolute inset-0 bg-pink-300 rounded-full blur-md animate-pulse-glow" />
+          <div className="absolute inset-0 bg-gradient-to-r from-pink-500/0 via-pink-500/50 to-pink-500/0 transform -rotate-45" />
+        </motion.div>
+
+        {/* Obstacles */}
+        {gameState.obstacles.map((obstacle) => {
+          const age = Date.now() - obstacle.createdAt;
+          const progress = age / obstacle.lifetime;
+          const scale = 1 + Math.sin(progress * Math.PI) * 0.2; // Pulse effect
+
+          return (
+            <motion.div
+              key={`obstacle-${obstacle.position.x}-${obstacle.position.y}-${obstacle.createdAt}`}
+              className="relative"
+              style={{
+                gridColumn: obstacle.position.x + 1,
+                gridRow: obstacle.position.y + 1
+              }}
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ 
+                scale: scale,
+                opacity: 1 - progress,
+                rotate: 360
+              }}
+              transition={{ 
+                duration: 0.5,
+                repeat: Infinity,
+                ease: "linear"
+              }}
+            >
+              {obstacle.type === 'green' && (
+                <>
+                  <div className="absolute inset-0 bg-green-500 rounded-full animate-pulse-glow" />
+                  <div className="absolute inset-0 bg-green-400 rounded-full blur-sm animate-pulse-glow" />
+                  <div className="absolute inset-0 bg-green-300 rounded-full blur-md animate-pulse-glow" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-green-500/0 via-green-500/50 to-green-500/0 transform -rotate-45" />
+                  <div className="absolute inset-0 bg-white rounded-full opacity-20 animate-ping" />
+                </>
+              )}
+              
+              {obstacle.type === 'orange' && (
+                <>
+                  <div className="absolute inset-0 bg-orange-500 rounded-full animate-pulse-glow" />
+                  <div className="absolute inset-0 bg-orange-400 rounded-full blur-sm animate-pulse-glow" />
+                  <div className="absolute inset-0 bg-orange-300 rounded-full blur-md animate-pulse-glow" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-orange-500/0 via-orange-500/50 to-orange-500/0 transform -rotate-45" />
+                  <div className="absolute inset-0 bg-white rounded-full opacity-20 animate-ping" />
+                </>
+              )}
+            </motion.div>
+          );
+        })}
 
         {/* Wishing Star */}
         {wishingStar && (
@@ -257,18 +321,24 @@ export default function SnakeGame({ isPaused, onScoreChange, onRestart, onPauseC
             className="relative"
             style={{
               gridColumn: wishingStar.x + 1,
-              gridRow: wishingStar.y + 1,
-              position: 'relative'
+              gridRow: wishingStar.y + 1
             }}
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            exit={{ scale: 0 }}
-            transition={{ duration: 0.2 }}
+            initial={{ scale: 0, rotate: 0 }}
+            animate={{ 
+              scale: [1, 1.2, 1],
+              rotate: 360
+            }}
+            transition={{ 
+              duration: 2,
+              repeat: Infinity,
+              ease: "linear"
+            }}
           >
-            <div className="absolute inset-0 bg-blue-500 rounded-full animate-pulse" />
-            <div className="absolute inset-0 bg-blue-400 rounded-full blur-sm animate-pulse" />
-            <div className="absolute inset-0 bg-blue-300 rounded-full blur-md animate-pulse" />
+            <div className="absolute inset-0 bg-blue-500 rounded-full animate-pulse-glow" />
+            <div className="absolute inset-0 bg-blue-400 rounded-full blur-sm animate-pulse-glow" />
+            <div className="absolute inset-0 bg-blue-300 rounded-full blur-md animate-pulse-glow" />
             <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 via-blue-500/50 to-blue-500/0 transform -rotate-45" />
+            <div className="absolute inset-0 bg-white rounded-full opacity-30 animate-ping" />
           </motion.div>
         )}
       </div>
@@ -330,15 +400,114 @@ export default function SnakeGame({ isPaused, onScoreChange, onRestart, onPauseC
       {/* Supernova effect */}
       {showSupernova && (
         <div className="absolute inset-0 pointer-events-none z-50">
+          {/* Initial flash */}
           <motion.div
             initial={{ opacity: 0 }}
+            animate={{ opacity: [0, 1, 0] }}
+            transition={{ duration: 0.2 }}
+            className="absolute inset-0 bg-white"
+          />
+
+          {/* Core explosion */}
+          <motion.div
+            initial={{ scale: 0.5, opacity: 0 }}
             animate={{ 
-              opacity: [0, 0.3, 0.6, 0.8, 1, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0],
-              scale: [1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.1, 2.2, 2.3, 2.4]
+              scale: [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5],
+              opacity: [0, 1, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0]
             }}
             transition={{ 
-              duration: 3,
-              times: [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.85, 0.9, 0.92, 0.94, 0.96, 1]
+              duration: 1.5,
+              times: [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 1],
+              ease: "easeOut"
+            }}
+            className="absolute inset-0"
+          >
+            {/* Intense core */}
+            <div className="absolute inset-0 bg-white opacity-90 animate-pulse-glow" />
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 opacity-80" />
+            
+            {/* Energy waves */}
+            <div className="absolute inset-0 bg-gradient-radial from-white/90 via-purple-500/50 to-transparent animate-pulse-glow" />
+            <div className="absolute inset-0 bg-gradient-radial from-white/80 via-pink-500/40 to-transparent animate-pulse-glow" style={{ animationDelay: '0.1s' }} />
+            <div className="absolute inset-0 bg-gradient-radial from-white/70 via-blue-500/30 to-transparent animate-pulse-glow" style={{ animationDelay: '0.2s' }} />
+          </motion.div>
+
+          {/* Energy particles */}
+          <div className="absolute inset-0">
+            {Array.from({ length: 30 }).map((_, i) => (
+              <motion.div
+                key={i}
+                className="absolute w-1 h-1 bg-white rounded-full"
+                initial={{ 
+                  x: '50%', 
+                  y: '50%',
+                  scale: 0,
+                  opacity: 1
+                }}
+                animate={{ 
+                  x: `${Math.random() * 100}%`,
+                  y: `${Math.random() * 100}%`,
+                  scale: [0, 1, 0],
+                  opacity: [1, 0.8, 0]
+                }}
+                transition={{ 
+                  duration: 0.5,
+                  delay: i * 0.02,
+                  ease: "easeOut"
+                }}
+              />
+            ))}
+          </div>
+
+          {/* Shockwave rings */}
+          <div className="absolute inset-0">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <motion.div
+                key={i}
+                className="absolute inset-0 border-2 border-white/30 rounded-full"
+                initial={{ scale: 0, opacity: 0.8 }}
+                animate={{ 
+                  scale: [0, 1.5, 2],
+                  opacity: [0.8, 0.4, 0]
+                }}
+                transition={{ 
+                  duration: 0.8,
+                  delay: i * 0.15,
+                  ease: "easeOut"
+                }}
+              />
+            ))}
+          </div>
+
+          {/* Energy beams */}
+          <div className="absolute inset-0">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <motion.div
+                key={i}
+                className="absolute inset-0"
+                initial={{ rotate: i * 45, scale: 0, opacity: 0 }}
+                animate={{ 
+                  scale: [0, 1, 1.5],
+                  opacity: [0, 0.8, 0]
+                }}
+                transition={{ 
+                  duration: 1,
+                  delay: 0.2,
+                  ease: "easeOut"
+                }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent" />
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Final flash */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: [0, 1, 0] }}
+            transition={{ 
+              duration: 0.3,
+              delay: 1.2
             }}
             className="absolute inset-0 bg-white"
           />
