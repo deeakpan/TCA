@@ -139,7 +139,8 @@ Building a Snake game powered by true cosmic randomness from SpaceComputer's Orb
 - [ ] Phase 4: Testing and Polish
 
 ## Executor's Feedback or Assistance Requests
-(To be filled during implementation)
+
+- Need to implement the styling improvements for the Cosmic Hub page as requested. The user wants to use a specific local image for the background and make the game cards more dynamic. I will interpret "slides swaps" as enhancing the visual transitions and interactions of the cards within the existing grid layout for now. I will also look for other areas to apply creative styling.
 
 ## Lessons
 (To be filled during implementation)
@@ -165,4 +166,24 @@ Building a Snake game powered by true cosmic randomness from SpaceComputer's Orb
 2. Slice into 2-character chunks
 3. Group in 4s (4 hex chars = 2 bytes = x,y)
 4. Convert to grid positions using modulo 20
-5. Cache positions and refresh when needed 
+5. Cache positions and refresh when needed
+
+### Current Status / Progress Tracking
+
+- [x] Implement mobile D-pad for Snake Game.
+- [x] Adjust D-pad position and size, move instructions.
+- [x] Implement D-pad control logic.
+- [x] Improve basic D-pad styling and ensure click handlers work.
+- [x] Debug D-pad controls (ref forwarding issue).
+- [x] Improve D-pad container styling (boxed background, border, rounded corners).
+- [x] Use Radix icons for D-pad.
+- [x] Make gameplay section full width on mobile.
+- [x] Move score and pause buttons to mobile D-pad sides.
+- [x] Adjust positioning of mobile score/pause to be closer to game edge, left/right aligned.
+- [x] Restore desktop controls at top right.
+- [x] Center gameplay container on desktop.
+- [ ] Improve Cosmic Hub styling:
+  - Use `public/nebula.jpg` as a large background image.
+  - Enhance game card styling and animations (interpret "slides swaps" with transitions/hovers).
+  - Apply creative styling improvements.
+  - Ensure desktop view is unaffected. 

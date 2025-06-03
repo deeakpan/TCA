@@ -27,6 +27,7 @@
     "react-dom": "^18.2.0",
     "react-game-kit": "^1.0.6",
     "react-icons": "^5.5.0",
+    "react-ribbons": "^1.1.7",
     "three": "^0.161.0",
     "viem": "^2.30.5",
     "wagmi": "^2.15.4"
