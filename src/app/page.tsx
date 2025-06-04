@@ -4,6 +4,11 @@ import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion'
 import Link from 'next/link';
 import { useEffect, useState, useRef } from 'react';
 import { Gamepad2, Zap, Code, ArrowRight, Star, Brain, Sparkles, Wallet, Dna, Atom, Telescope, Shield, Lock, Database, Cpu, Network, ChevronRight, Menu } from 'lucide-react';
+import { Disclosure } from '@headlessui/react';
+import { ChevronDown } from 'lucide-react';
+import React from 'react';
+import * as THREE from 'three';
+import DNASphere from '../components/DNASphere';
 
 export default function Home() {
   const [windowWidth, setWindowWidth] = useState(0);
@@ -273,75 +278,113 @@ export default function Home() {
   );
 
   // DNA Section for both mobile and desktop
-  const DNASection = () => (
-    <section className="px-4 py-12 md:py-24">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        className="max-w-6xl mx-auto"
-      >
-        <h2 className="text-2xl md:text-4xl font-bold mb-8 text-center bg-gradient-to-r from-purple-400 to-pink-400 text-transparent bg-clip-text">
-          Your Cosmic DNA
-        </h2>
-        <div className="grid md:grid-cols-2 gap-8 items-center">
-          <div className="space-y-6">
-            <div className="bg-black/40 backdrop-blur-sm rounded-2xl p-6 border border-purple-500/20">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-bold">DNA Match Score</h3>
-                <div className="text-3xl font-bold text-purple-400">98%</div>
+  const DNASection = () => {
+    const [showPopup, setShowPopup] = useState(false);
+    return (
+      <section className="px-4 py-12 md:py-24">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="max-w-6xl mx-auto"
+        >
+          <h2 className="text-2xl md:text-4xl font-bold mb-8 text-center bg-gradient-to-r from-purple-400 to-pink-400 text-transparent bg-clip-text">
+            Your Cosmic DNA
+          </h2>
+          <div className="grid md:grid-cols-2 gap-8 items-center">
+            <div className="space-y-6">
+              <div className="bg-black/40 backdrop-blur-sm rounded-2xl p-6 border border-purple-500/20">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-bold">DNA Match Score</h3>
+                  <div className="text-3xl font-bold text-purple-400">98%</div>
+                </div>
+                <div className="h-2 bg-purple-900/50 rounded-full overflow-hidden">
+                  <motion.div 
+                    className="h-full bg-gradient-to-r from-purple-500 to-pink-500"
+                    initial={{ width: 0 }}
+                    whileInView={{ width: "98%" }}
+                    transition={{ duration: 1, ease: "easeOut" }}
+                  />
+                </div>
               </div>
-              <div className="h-2 bg-purple-900/50 rounded-full overflow-hidden">
-                <motion.div 
-                  className="h-full bg-gradient-to-r from-purple-500 to-pink-500"
-                  initial={{ width: 0 }}
-                  whileInView={{ width: "98%" }}
-                  transition={{ duration: 1, ease: "easeOut" }}
-                />
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 rounded-full bg-purple-400"></div>
+                  <span className="text-gray-300">Unique cosmic radiation pattern</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 rounded-full bg-purple-400"></div>
+                  <span className="text-gray-300">Personalized cosmic insights</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 rounded-full bg-purple-400"></div>
+                  <span className="text-gray-300">Real-time cosmic data integration</span>
+                </div>
               </div>
-            </div>
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-2 h-2 rounded-full bg-purple-400"></div>
-                <span className="text-gray-300">Unique cosmic radiation pattern</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-2 h-2 rounded-full bg-purple-400"></div>
-                <span className="text-gray-300">Personalized cosmic insights</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-2 h-2 rounded-full bg-purple-400"></div>
-                <span className="text-gray-300">Real-time cosmic data integration</span>
-              </div>
-            </div>
-          </div>
-          <div className="relative aspect-square">
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-600/20 to-pink-600/20 rounded-2xl blur-2xl"></div>
-            <div className="relative h-full flex items-center justify-center">
-              <motion.div
-                animate={{
-                  rotate: 360,
-                }}
-                transition={{
-                  duration: 20,
-                  repeat: Infinity,
-                  ease: "linear"
-                }}
-                className="w-48 h-48 md:w-64 md:h-64"
+              <button
+                onClick={() => setShowPopup(true)}
+                className="w-full mt-6 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg text-white font-medium hover:from-purple-500 hover:to-pink-500 transition-all transform hover:scale-105"
               >
-                <div className="absolute inset-0 border-2 border-purple-500/30 rounded-full"></div>
-                <div className="absolute inset-4 border-2 border-pink-500/30 rounded-full"></div>
-                <div className="absolute inset-8 border-2 border-purple-500/30 rounded-full"></div>
-                <div className="absolute inset-12 border-2 border-pink-500/30 rounded-full"></div>
-                <div className="absolute inset-16 border-2 border-purple-500/30 rounded-full"></div>
-                <div className="absolute inset-20 border-2 border-pink-500/30 rounded-full"></div>
-              </motion.div>
+                Mint DNA
+              </button>
+            </div>
+            <div className="relative aspect-square">
+              <div className="relative h-full w-full">
+                <DNASphere size={2} rotationSpeedY={0.003} rotationSpeedX={0.001} />
+              </div>
             </div>
           </div>
-        </div>
-      </motion.div>
-    </section>
-  );
+          {/* DNA Token Explanation */}
+          <div className="mt-10 max-w-2xl mx-auto text-center space-y-4">
+            <div className="text-lg font-semibold bg-gradient-to-r from-purple-400 to-pink-400 text-transparent bg-clip-text">What is a DNA Token?</div>
+            <div className="text-gray-300 text-sm">Your DNA token is your passport to the Nexus. It is crucial for participation in all activities, unlocking access to features, games, and experiences across the platform.</div>
+            <div className="text-gray-400 text-xs mt-2">Format: <span className="font-mono text-purple-300">TCA-G2V-HCNO-JOHN-5f</span></div>
+            <div className="text-xs text-gray-500">TCA: Platform | G2V: Star Type | HCNO: Elements | JOHN: Name | 5f: Wallet Suffix</div>
+          </div>
+        </motion.div>
+
+        {/* Coming Soon Popup */}
+        <AnimatePresence>
+          {showPopup && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50"
+              onClick={() => setShowPopup(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-black/90 border border-purple-500/20 rounded-xl p-8 max-w-md mx-4"
+                onClick={e => e.stopPropagation()}
+              >
+                <div className="w-full flex justify-center mb-6">
+                  <div className="w-40 h-40">
+                    <DNASphere size={2} rotationSpeedY={0.003} rotationSpeedX={0.001} />
+                  </div>
+                </div>
+                <h3 className="text-2xl font-bold mb-4 bg-gradient-to-r from-purple-400 to-pink-400 text-transparent bg-clip-text">
+                  Coming Soon
+                </h3>
+                <div className="text-lg font-bold text-purple-400 mb-2">Mint for $1 in ETH</div>
+                <p className="text-gray-300 mb-6">
+                  Your DNA will unlock access to all features and experiences across the Nexus. The Mint DNA feature is currently under development. Stay tuned for updates!
+                </p>
+                <button
+                  onClick={() => setShowPopup(false)}
+                  className="w-full px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg text-white font-medium hover:from-purple-500 hover:to-pink-500 transition-all"
+                >
+                  Close
+                </button>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </section>
+    );
+  };
 
   // Mobile Layout
   const MobileLayout = () => (
@@ -355,10 +398,63 @@ export default function Home() {
         <MobileCosmicElements />
         <MobileStarTypes />
         <MobileCTA />
+        <MemoizedFAQSection />
         <MobileFooter />
       </main>
     </>
   );
+
+  // FAQ Section
+  const FAQSection = () => {
+    const faqs = [
+      {
+        question: "What is Cosmic DNA?",
+        answer: "Cosmic DNA is your unique cosmic profile in the Cosmic Nexus platform. It represents your cosmic connection and influences your personalized experience."
+      },
+      {
+        question: "How is the randomness generated?",
+        answer: "The platform uses SpaceComputer's cTRNG technology for random number generation, while all other features are developed by Cosmic Nexus."
+      },
+      {
+        question: "What is the Nebula Serpent game?",
+        answer: "Nebula Serpent is our immersive snake game where you control the snake's movement. SpaceComputer's random number generation is used to determine the positions of stars (planets) and cosmic elements that the snake collects."
+      },
+      {
+        question: "How accurate is the cosmic profiling?",
+        answer: "The cosmic profiling system has a 98% accuracy rate, combining our advanced AI analysis with SpaceComputer's random number generation."
+      },
+      {
+        question: "Can I use the API for my own projects?",
+        answer: "For random number generation, you'll need to use SpaceComputer's API. For other platform features, check our developer documentation."
+      }
+    ];
+
+    return (
+      <section className="px-4 py-12 md:py-24">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="max-w-4xl mx-auto"
+        >
+          <h2 className="text-xl md:text-2xl font-bold mb-6 text-left bg-gradient-to-r from-purple-400 to-pink-400 text-transparent bg-clip-text">
+            Frequently Asked Questions
+          </h2>
+          <div className="space-y-6">
+            {faqs.map((faq, index) => (
+              <div key={index} className="bg-black/50 backdrop-blur-sm border border-purple-500/20 rounded-lg p-4">
+                <h3 className="text-base font-medium mb-2">{faq.question}</h3>
+                <p className="text-sm text-gray-300">{faq.answer}</p>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      </section>
+    );
+  };
+
+  // Memoize the FAQ section to prevent unnecessary re-renders
+  const MemoizedFAQSection = React.memo(FAQSection);
 
   // Mobile Features Section
   const MobileFeatures = () => (
@@ -1084,6 +1180,9 @@ We are not liable for any damages arising from the use of our services.
               </div>
             </motion.div>
           </section>
+
+          {/* FAQ Section */}
+          <MemoizedFAQSection />
         </div>
       </main>
 
