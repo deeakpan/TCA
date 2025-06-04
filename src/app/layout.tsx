@@ -9,8 +9,8 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: "True Cosmic Ancestry",
-  description: "Discover your celestial heritage through the cosmic elements that shaped your existence",
+  title: "Cosmic Nexus",
+  description: "Cosmic Nexus is a platform where users can discover their cosmic ancestry, generate and mint unique DNA tokens based on cosmic radiation data, and participate in games and experiences powered by true randomness from space.",
 };
 
 export default function RootLayout({
