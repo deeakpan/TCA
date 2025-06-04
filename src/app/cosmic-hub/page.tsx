@@ -1,385 +1,374 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import React, { useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { Ribbon } from 'react-ribbons';
+import { ArrowLeft, ArrowRight, Star, Rocket, Gamepad2 } from 'lucide-react';
 
-export default function CosmicHub() {
-  const [windowWidth, setWindowWidth] = useState(0);
-  const [windowHeight, setWindowHeight] = useState(0);
+const CosmicHub = () => {
+  const [windowDimensions, setWindowDimensions] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
-    setWindowWidth(window.innerWidth);
-    setWindowHeight(window.innerHeight);
+    const updateWindowDimensions = () => {
+      setWindowDimensions({ width: window.innerWidth, height: window.innerHeight });
+    };
+
+    updateWindowDimensions();
+    window.addEventListener('resize', updateWindowDimensions);
+
+    return () => {
+      window.removeEventListener('resize', updateWindowDimensions);
+    };
   }, []);
+
+  const games = [
+    {
+      id: 'discover',
+      title: 'Discover Profile',
+      description: 'Uncover your cosmic ancestry and explore your celestial heritage',
+      image: '/cosmic-profile.jpg',
+      category: 'Profile',
+      available: true,
+      gradient: 'from-purple-600 via-blue-600 to-cyan-600',
+      link: '/profile',
+      icon: <Star className="w-6 h-6" />
+    },
+    {
+      id: 'serpent',
+      title: 'Nebula Serpent',
+      description: 'Navigate through cosmic dust and collect celestial bodies in this mesmerizing snake adventure',
+      image: '/nebula.jpg',
+      category: 'Adventure',
+      available: true,
+      gradient: 'from-green-600 via-emerald-600 to-teal-600',
+      link: '/snake-game',
+      icon: <Rocket className="w-6 h-6" />
+    },
+    {
+      id: 'tetris',
+      title: 'Cosmic Tetris',
+      description: 'Stack cosmic blocks in this zero-gravity puzzle adventure',
+      image: 'https://images.unsplash.com/photo-1614728894747-a83421e2b9c9?w=400&h=300&fit=crop',
+      category: 'Puzzle',
+      available: false,
+      gradient: 'from-blue-600 via-indigo-600 to-purple-600',
+      icon: <Gamepad2 className="w-6 h-6" />
+    },
+    {
+      id: 'invaders',
+      title: 'Galactic Shooter',
+      description: 'Navigate through the cosmos, battling celestial anomalies and cosmic entities in this intense space shooter',
+      image: 'https://images.unsplash.com/photo-1614728894747-a83421e2b9c9?w=400&h=300&fit=crop',
+      category: 'Shooter',
+      available: false,
+      gradient: 'from-red-600 via-orange-600 to-yellow-600',
+      icon: <Rocket className="w-6 h-6" />
+    },
+    {
+      id: 'runner',
+      title: 'Star Runner',
+      description: 'Endless runner through the cosmos, dodge asteroids and collect power-ups',
+      image: 'https://images.unsplash.com/photo-1614728894747-a83421e2b9c9?w=400&h=300&fit=crop',
+      category: 'Runner',
+      available: false,
+      gradient: 'from-pink-600 via-rose-600 to-red-600'
+    },
+    {
+      id: 'pong',
+      title: 'Galaxy Pong',
+      description: 'Classic pong with cosmic twists and gravitational effects',
+      image: 'https://images.unsplash.com/photo-1614728894747-a83421e2b9c9?w=400&h=300&fit=crop',
+      category: 'Classic',
+      available: false,
+      gradient: 'from-yellow-600 via-amber-600 to-orange-600'
+    }
+  ];
+
+  // Animation variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: { 
+      opacity: 1,
+      transition: { 
+        staggerChildren: 0.1,
+        delayChildren: 0.2
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: { 
+      y: 0, 
+      opacity: 1,
+      transition: { 
+        type: "spring",
+        stiffness: 100,
+        damping: 20
+      }
+    }
+  };
+
+  const buttonHoverVariants = {
+    hover: { 
+      scale: 1.02,
+      transition: {
+        type: "spring",
+        stiffness: 200,
+        damping: 15
+      }
+    },
+    tap: { scale: 0.98 }
+  };
+
+  // Simple animated stars background
+  const StarField = () => (
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        {[...Array(50)].map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute w-1 h-1 bg-white rounded-full"
+            initial={{
+            x: Math.random() * windowDimensions.width,
+            y: Math.random() * windowDimensions.height,
+              scale: Math.random() * 2,
+              opacity: Math.random() * 0.5 + 0.5
+            }}
+            animate={{
+            x: [null, Math.random() * windowDimensions.width],
+            y: [null, Math.random() * windowDimensions.height],
+              opacity: [null, Math.random() * 0.5 + 0.5],
+              scale: [null, Math.random() * 2]
+            }}
+            transition={{
+              duration: Math.random() * 15 + 15,
+              repeat: Infinity,
+              ease: "linear"
+            }}
+          />
+        ))}
+      </div>
+  );
+
+  const GameCard = ({ game, index }) => (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, delay: index * 0.1 }}
+      className="group relative"
+    >
+      <div className="relative overflow-hidden rounded-3xl bg-black/40 backdrop-blur-sm border border-white/10">
+        {/* Holographic Border Effect */}
+        <div className="absolute -inset-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+          <div className={`absolute inset-0 bg-gradient-to-r ${game.gradient} rounded-3xl blur-sm`} />
+        </div>
+        
+        {/* Main Card Content */}
+        <div className="relative bg-black/80 backdrop-blur-sm rounded-3xl p-1">
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-gray-900/50 to-black/50">
+            
+            {/* Image Container */}
+            <div className="relative h-48 overflow-hidden">
+              <img
+                src={game.image}
+                alt={game.title}
+                className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+              />
+              
+              {/* Overlay Gradient */}
+              <div className={`absolute inset-0 bg-gradient-to-t ${game.gradient} opacity-30 transition-opacity duration-300`} />
+              
+              {/* Floating Category Badge */}
+              <div className="absolute top-4 right-4">
+                <span className={`px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r ${game.gradient} text-white`}>
+                  {game.category}
+                </span>
+              </div>
+
+              {/* Coming Soon Badge */}
+              {!game.available && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+                  <div className="bg-purple-600/90 text-white px-6 py-2 rounded-lg font-bold text-lg shadow-xl border border-purple-400/50">
+                    COMING SOON
+                  </div>
+                </div>
+              )}
+
+              {/* Scan Line Effect */}
+              <div className="absolute inset-0 pointer-events-none">
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              </div>
+            </div>
+
+            {/* Content Section */}
+            <div className="p-6 space-y-4">
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-lg bg-gradient-to-r ${game.gradient}`}>
+                  {game.icon}
+                </div>
+                <h3 className={`text-2xl font-bold bg-gradient-to-r ${game.gradient} bg-clip-text text-transparent`}>
+                  {game.title}
+                </h3>
+      </div>
+
+              <p className="text-gray-300 text-sm leading-relaxed">
+                {game.description}
+              </p>
+
+              {/* Action Button */}
+              <div className="transform transition-transform duration-300 hover:scale-[1.02] active:scale-[0.98]">
+                {game.available ? (
+                  <Link href={game.link}>
+                    <button className={`w-full py-3 rounded-xl bg-gradient-to-r ${game.gradient} text-white font-semibold hover:shadow-lg hover:shadow-purple-500/25 transition-all duration-300 flex items-center justify-center gap-2`}>
+                      {game.id === 'discover' ? 'Enter the Cosmos' : 
+                       game.id === 'serpent' ? 'Start Journey' :
+                       game.id === 'tetris' ? 'Begin Puzzle' :
+                       game.id === 'invaders' ? 'Join Battle' :
+                       game.id === 'runner' ? 'Start Run' :
+                       game.id === 'pong' ? 'Play Match' : 'Launch Game'}
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </Link>
+                ) : (
+                  <button className="w-full py-3 rounded-xl bg-gray-700/50 text-gray-400 font-semibold cursor-not-allowed flex items-center justify-center gap-2">
+                    Notify Me
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-black via-purple-950 to-black text-white overflow-hidden">
-      {/* Background Nebula Image */}
-      <div className="fixed inset-0">
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{
-            backgroundImage: `url('/nebula.jpg')`,
-            filter: 'blur(8px) brightness(0.6)',
-            transform: 'scale(1.05)',
-          }}
-        />
-        <div className="absolute inset-0 bg-black/50" /> {/* Overlay for readability */}
+      {/* Animated background stars */}
+      <StarField />
+
+      {/* Subtle Top Bar */}
+      <div className="fixed top-0 left-0 right-0 z-50 backdrop-blur-sm bg-black/20 border-b border-white/5">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-between h-16">
+            <Link href="/">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="inline-flex items-center text-purple-400 hover:text-purple-300 transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5 mr-2" />
+                Back
+              </motion.button>
+            </Link>
+            <h1 className="text-xl font-light tracking-tight">
+              <span className="bg-gradient-to-r from-purple-400 via-pink-500 to-purple-400 text-transparent bg-clip-text">
+                Cosmic Hub
+              </span>
+            </h1>
+            <div className="w-20" /> {/* Spacer for balance */}
+          </div>
+        </div>
       </div>
 
-      <main className="container mx-auto px-4 py-8 relative z-10">
+      <main className="container mx-auto px-4 pt-24 pb-8 relative z-10">
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           className="max-w-5xl mx-auto"
         >
-          {/* Back to Home */}
-          <div className="mb-8">
-            <Link 
-              href="/"
-              className="inline-flex items-center text-purple-400 hover:text-purple-300 transition-colors group"
-            >
-              <motion.span
-                initial={{ x: 0 }}
-                animate={{ x: [0, -5, 0] }}
-                transition={{ duration: 1.5, repeat: Infinity }}
-                className="mr-2"
-              >
-                ←
-              </motion.span>
-              Back to Home
-            </Link>
-          </div>
-
-          {/* Hub Title */}
+          {/* Welcome Message */}
           <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-            className="text-center mb-16"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="text-center mb-12"
           >
-            <h1 className="font-outfit text-4xl md:text-5xl lg:text-6xl font-light mb-4 tracking-tight">
-              <span className="bg-gradient-to-r from-purple-400 via-pink-500 to-purple-400 text-transparent bg-clip-text inline-block transform hover:scale-105 transition-transform">
-                Cosmic Hub
-              </span>
-            </h1>
-            <p className="text-gray-400 mt-4 text-lg">Your gateway to cosmic adventures</p>
-            <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-32 h-1 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full" />
+            <p className="text-gray-400 text-lg">Your gateway to cosmic adventures</p>
           </motion.div>
+
+          {/* Daily Challenge Card */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="mb-8 md:mb-12"
+          >
+            <div className="relative group">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 rounded-2xl blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-gradient" />
+              <div className="relative bg-black/80 backdrop-blur-sm rounded-2xl p-1">
+                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-gray-900/50 to-black/50">
+                  <div className="p-4 md:p-6">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600">
+                          <Star className="w-5 h-5 md:w-6 md:h-6 text-white" />
+                  </div>
+                        <h3 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                          Daily Cosmic Challenge
+                  </h3>
+                      </div>
+                      <div className="text-sm text-purple-400 bg-purple-900/30 px-3 py-1.5 rounded-lg">
+                        Resets in 12h 34m
+                      </div>
+                    </div>
+                    
+                    <div className="grid md:grid-cols-2 gap-4 md:gap-6">
+                      <div>
+                        <h4 className="text-base md:text-lg font-semibold text-white mb-2">Today's Mission</h4>
+                        <p className="text-sm md:text-base text-gray-300 mb-4">
+                          Navigate through the cosmic dust in Nebula Serpent and collect 50 celestial bodies without hitting any obstacles.
+                        </p>
+                        <div className="flex flex-wrap items-center gap-3 text-xs md:text-sm text-gray-400">
+                          <div className="flex items-center gap-2 bg-purple-900/30 px-3 py-1.5 rounded-lg">
+                            <div className="w-2 h-2 rounded-full bg-purple-400" />
+                            <span>Reward: 100 Cosmic Points</span>
+                          </div>
+                          <div className="flex items-center gap-2 bg-pink-900/30 px-3 py-1.5 rounded-lg">
+                            <div className="w-2 h-2 rounded-full bg-pink-400" />
+                            <span>Difficulty: Medium</span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="relative mt-4 md:mt-0">
+                        <div className="absolute inset-0 bg-gradient-to-r from-purple-600/20 to-pink-600/20 rounded-lg" />
+                        <div className="relative p-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm text-gray-400">Progress</span>
+                            <span className="text-sm text-purple-400">0/50</span>
+                          </div>
+                          <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+                            <div className="h-full w-0 bg-gradient-to-r from-purple-600 to-pink-600 transition-all duration-500" />
+                </div>
+                          <div className="mt-4">
+                            <Link href="/snake-game">
+                              <button className="w-full py-2.5 md:py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white text-sm md:text-base font-semibold hover:shadow-lg hover:shadow-purple-500/25 transition-all duration-300 flex items-center justify-center gap-2">
+                                Accept Challenge
+                                <ArrowRight className="w-4 h-4" />
+                              </button>
+              </Link>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            </motion.div>
 
           {/* Games Grid */}
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {/* Discover Profile Card */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="group relative overflow-hidden rounded-lg"
-            >
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200" />
-              <Link href="/profile" className="relative block bg-black p-8 rounded-lg h-full transform transition-transform duration-300 group-hover:scale-105">
-                <div className="flex flex-col items-center text-center">
-                  <div className="w-32 h-32 mb-4 rounded-full bg-purple-500/20 flex items-center justify-center overflow-hidden transform group-hover:scale-110 transition-transform duration-300">
-                    <img 
-                      src="https://images.unsplash.com/photo-1614728263952-84ea256f9679?w=200&h=200&fit=crop" 
-                      alt="Profile" 
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <h3 className="text-xl font-semibold mb-2 bg-gradient-to-r from-purple-400 to-pink-400 text-transparent bg-clip-text">
-                    Discover Profile
-                  </h3>
-                  <p className="text-gray-400">
-                    Uncover your cosmic ancestry and explore your celestial heritage
-                  </p>
-                </div>
-              </Link>
-            </motion.div>
-
-            {/* Nebula Serpent Card */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="group relative overflow-hidden rounded-lg"
-            >
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200" />
-              <Link href="/snake-game" className="relative block bg-black p-8 rounded-lg h-full transform transition-transform duration-300 group-hover:scale-105">
-                <div className="flex flex-col items-center text-center">
-                  <div className="w-32 h-32 mb-4 rounded-full bg-purple-500/20 flex items-center justify-center overflow-hidden transform group-hover:scale-110 transition-transform duration-300">
-                    <img 
-                      src="/Screenshot 2025-06-03 120016.png" 
-                      alt="Nebula Serpent" 
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <h3 className="text-xl font-semibold mb-2 bg-gradient-to-r from-purple-400 to-pink-400 text-transparent bg-clip-text">
-                    Nebula Serpent
-                  </h3>
-                  <p className="text-gray-400">
-                    Navigate through cosmic dust and collect celestial bodies in this mesmerizing snake adventure
-                  </p>
-                </div>
-              </Link>
-            </motion.div>
-
-            {/* Coming Soon Games */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6 }}
-              className="group relative overflow-hidden rounded-lg"
-            >
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200" />
-              <div className="relative block bg-black p-8 rounded-lg h-full">
-                <Ribbon
-                  side="right"
-                  type="corner"
-                  size="large"
-                  backgroundColor="#7E22CE"
-                  color="#fff"
-                  withStripes={false}
-                  fontFamily="inherit"
-                >
-                  Coming Soon
-                </Ribbon>
-                <div className="flex flex-col items-center text-center">
-                  <div className="w-32 h-32 mb-4 rounded-full bg-purple-500/20 flex items-center justify-center overflow-hidden transform group-hover:scale-110 transition-transform duration-300">
-                    <img 
-                      src="https://images.unsplash.com/photo-1614728894747-a83421e2b9c9?w=200&h=200&fit=crop" 
-                      alt="Cosmic Tetris" 
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <h3 className="text-xl font-semibold mb-2 bg-gradient-to-r from-purple-400 to-pink-400 text-transparent bg-clip-text">
-                    Cosmic Tetris
-                  </h3>
-                  <p className="text-gray-400">
-                    Stack cosmic blocks in this zero-gravity puzzle adventure
-                  </p>
-                  <div className="mt-4">
-                    <span className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full text-sm">
-                      Puzzle
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.8 }}
-              className="group relative overflow-hidden rounded-lg"
-            >
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200" />
-              <div className="relative block bg-black p-8 rounded-lg h-full">
-                <Ribbon
-                  side="right"
-                  type="corner"
-                  size="large"
-                  backgroundColor="#7E22CE"
-                  color="#fff"
-                  withStripes={false}
-                  fontFamily="inherit"
-                >
-                  Coming Soon
-                </Ribbon>
-                <div className="flex flex-col items-center text-center">
-                  <div className="w-32 h-32 mb-4 rounded-full bg-purple-500/20 flex items-center justify-center overflow-hidden transform group-hover:scale-110 transition-transform duration-300">
-                    <img 
-                      src="https://images.unsplash.com/photo-1614728894747-a83421e2b9c9?w=200&h=200&fit=crop" 
-                      alt="Space Invaders" 
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <h3 className="text-xl font-semibold mb-2 bg-gradient-to-r from-purple-400 to-pink-400 text-transparent bg-clip-text">
-                    Space Invaders
-                  </h3>
-                  <p className="text-gray-400">
-                    Defend Earth from alien invaders in this classic arcade remake
-                  </p>
-                  <div className="mt-4">
-                    <span className="px-3 py-1 bg-red-500/20 text-red-300 rounded-full text-sm">
-                      Action
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1.0 }}
-              className="group relative overflow-hidden rounded-lg"
-            >
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200" />
-              <div className="relative block bg-black p-8 rounded-lg h-full">
-                <Ribbon
-                  side="right"
-                  type="corner"
-                  size="large"
-                  backgroundColor="#7E22CE"
-                  color="#fff"
-                  withStripes={false}
-                  fontFamily="inherit"
-                >
-                  Coming Soon
-                </Ribbon>
-                <div className="flex flex-col items-center text-center">
-                  <div className="w-32 h-32 mb-4 rounded-full bg-purple-500/20 flex items-center justify-center overflow-hidden transform group-hover:scale-110 transition-transform duration-300">
-                    <img 
-                      src="https://images.unsplash.com/photo-1614728894747-a83421e2b9c9?w=200&h=200&fit=crop" 
-                      alt="Star Runner" 
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <h3 className="text-xl font-semibold mb-2 bg-gradient-to-r from-purple-400 to-pink-400 text-transparent bg-clip-text">
-                    Star Runner
-                  </h3>
-                  <p className="text-gray-400">
-                    Endless runner through the cosmos, dodge asteroids and collect power-ups
-                  </p>
-                  <div className="mt-4">
-                    <span className="px-3 py-1 bg-green-500/20 text-green-300 rounded-full text-sm">
-                      Runner
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1.2 }}
-              className="group relative overflow-hidden rounded-lg"
-            >
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200" />
-              <div className="relative block bg-black p-8 rounded-lg h-full">
-                <Ribbon
-                  side="right"
-                  type="corner"
-                  size="large"
-                  backgroundColor="#7E22CE"
-                  color="#fff"
-                  withStripes={false}
-                  fontFamily="inherit"
-                >
-                  Coming Soon
-                </Ribbon>
-                <div className="flex flex-col items-center text-center">
-                  <div className="w-32 h-32 mb-4 rounded-full bg-purple-500/20 flex items-center justify-center overflow-hidden transform group-hover:scale-110 transition-transform duration-300">
-                    <img 
-                      src="https://images.unsplash.com/photo-1614728894747-a83421e2b9c9?w=200&h=200&fit=crop" 
-                      alt="Galaxy Pong" 
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <h3 className="text-xl font-semibold mb-2 bg-gradient-to-r from-purple-400 to-pink-400 text-transparent bg-clip-text">
-                    Galaxy Pong
-                  </h3>
-                  <p className="text-gray-400">
-                    Classic pong with cosmic twists and gravitational effects
-                  </p>
-                  <div className="mt-4">
-                    <span className="px-3 py-1 bg-yellow-500/20 text-yellow-300 rounded-full text-sm">
-                      Classic
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1.4 }}
-              className="group relative overflow-hidden rounded-lg"
-            >
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200" />
-              <div className="relative block bg-black p-8 rounded-lg h-full">
-                <Ribbon
-                  side="right"
-                  type="corner"
-                  size="large"
-                  backgroundColor="#7E22CE"
-                  color="#fff"
-                  withStripes={false}
-                  fontFamily="inherit"
-                >
-                  Coming Soon
-                </Ribbon>
-                <div className="flex flex-col items-center text-center">
-                  <div className="w-32 h-32 mb-4 rounded-full bg-purple-500/20 flex items-center justify-center overflow-hidden transform group-hover:scale-110 transition-transform duration-300">
-                    <img 
-                      src="https://images.unsplash.com/photo-1614728894747-a83421e2b9c9?w=200&h=200&fit=crop" 
-                      alt="Cosmic Memory" 
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <h3 className="text-xl font-semibold mb-2 bg-gradient-to-r from-purple-400 to-pink-400 text-transparent bg-clip-text">
-                    Cosmic Memory
-                  </h3>
-                  <p className="text-gray-400">
-                    Match celestial objects in this cosmic-themed memory game
-                  </p>
-                  <div className="mt-4">
-                    <span className="px-3 py-1 bg-indigo-500/20 text-indigo-300 rounded-full text-sm">
-                      Memory
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1.6 }}
-              className="group relative overflow-hidden rounded-lg"
-            >
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200" />
-              <div className="relative block bg-black p-8 rounded-lg h-full">
-                <Ribbon
-                  side="right"
-                  type="corner"
-                  size="large"
-                  backgroundColor="#7E22CE"
-                  color="#fff"
-                  withStripes={false}
-                  fontFamily="inherit"
-                >
-                  Coming Soon
-                </Ribbon>
-                <div className="flex flex-col items-center text-center">
-                  <div className="w-32 h-32 mb-4 rounded-full bg-purple-500/20 flex items-center justify-center overflow-hidden transform group-hover:scale-110 transition-transform duration-300">
-                    <img 
-                      src="https://images.unsplash.com/photo-1614728894747-a83421e2b9c9?w=200&h=200&fit=crop" 
-                      alt="Quantum Breakout" 
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <h3 className="text-xl font-semibold mb-2 bg-gradient-to-r from-purple-400 to-pink-400 text-transparent bg-clip-text">
-                    Quantum Breakout
-                  </h3>
-                  <p className="text-gray-400">
-                    Break through quantum barriers in this physics-based puzzle game
-                  </p>
-                  <div className="mt-4">
-                    <span className="px-3 py-1 bg-cyan-500/20 text-cyan-300 rounded-full text-sm">
-                      Physics
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
+            {games.map((game, index) => (
+              <GameCard key={game.id} game={game} index={index} />
+            ))}
           </div>
         </motion.div>
       </main>
     </div>
   );
-} 
+};
+
+export default CosmicHub;
