@@ -25,6 +25,8 @@ export type GameState = {
   lastObstacleSpawn: number;
   lastPauseTime: number | null;  // Track when the game was paused
   totalPausedTime: number;       // Track total time spent paused
+  wormhole: Position | null;
+  lastWormholeSpawn: number;
 };
 
 // Constants
@@ -34,6 +36,8 @@ const INITIAL_DIRECTION: Direction = 'RIGHT';
 const TICK_RATE = 200;
 const OBSTACLE_SPAWN_INTERVAL = 5000; // Spawn every 5 seconds
 const OBSTACLE_LIFETIME = 8000; // Obstacles last 8 seconds
+const WORMHOLE_SPAWN_INTERVAL = 60000; // 60 seconds
+const WORMHOLE_LIFETIME = 7000; // 7 seconds
 
 // Request deduplication cache
 let pendingRequest: Promise<Position[]> | null = null;
@@ -159,7 +163,9 @@ export async function initializeGame(): Promise<GameState> {
     obstacles: [],
     lastObstacleSpawn: Date.now(),
     lastPauseTime: null,
-    totalPausedTime: 0
+    totalPausedTime: 0,
+    wormhole: null,
+    lastWormholeSpawn: Date.now(),
   };
   console.log('Initial game state:', initialState);
   return initialState;
@@ -317,14 +323,17 @@ export function moveSnake(state: GameState, isPaused: boolean): GameState {
   }
   
   // Update obstacles
-  const updatedState = updateObstacles({
+  let newState = updateObstacles({
     ...state,
     snake: newSnake,
     score: hasEatenFood ? state.score + 1 : state.score
   }, isPaused);
 
-  console.log('New game state:', updatedState);
-  return updatedState;
+  newState = maybeSpawnWormhole(newState);
+  newState = handleWormholeCollision(newState);
+
+  console.log('New game state:', newState);
+  return newState;
 }
 
 // Change direction
@@ -344,6 +353,61 @@ export function changeDirection(state: GameState, newDirection: Direction): Game
   }
   
   return { ...state, direction: newDirection };
+}
+
+function getRandomEmptyCell(state: GameState): Position {
+  let x, y;
+  let tries = 0;
+  do {
+    x = Math.floor(Math.random() * GRID_SIZE);
+    y = Math.floor(Math.random() * GRID_SIZE);
+    tries++;
+    if (tries > 100) break;
+  } while (
+    state.snake.some(pos => pos.x === x && pos.y === y) ||
+    (state.food.x === x && state.food.y === y) ||
+    state.obstacles.some(obs => obs.position.x === x && obs.position.y === y)
+  );
+  return { x, y };
+}
+
+function maybeSpawnWormhole(state: GameState): GameState {
+  const now = Date.now();
+  if (
+    !state.wormhole &&
+    now - state.lastWormholeSpawn > WORMHOLE_SPAWN_INTERVAL
+  ) {
+    return {
+      ...state,
+      wormhole: getRandomEmptyCell(state),
+      lastWormholeSpawn: now
+    };
+  }
+  // Remove wormhole if expired
+  if (state.wormhole && now - state.lastWormholeSpawn > WORMHOLE_LIFETIME) {
+    return {
+      ...state,
+      wormhole: null
+    };
+  }
+  return state;
+}
+
+function handleWormholeCollision(state: GameState): GameState {
+  if (!state.wormhole) return state;
+  const head = state.snake[0];
+  if (head.x === state.wormhole.x && head.y === state.wormhole.y) {
+    // Teleport snake head to a new random location
+    const newHead = getRandomEmptyCell(state);
+    const newSnake = [newHead, ...state.snake.slice(1)];
+    return {
+      ...state,
+      snake: newSnake,
+      wormhole: null,
+      score: state.score + 3 // Bonus for using wormhole
+    };
+  }
+  return state;
 }
 
 // Export constants

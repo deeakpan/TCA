@@ -15,11 +15,79 @@ import {
   TICK_RATE_CONST
 } from '@/services/snakeService';
 
-interface SnakeGameProps {
-  isPaused: boolean;
-  onScoreChange: (score: number) => void;
-  onRestart: () => void;
-  onPauseChange: (paused: boolean) => void;
+// Declare window property type
+declare global {
+  interface Window {
+    __lastWormholeScore?: number;
+  }
+}
+
+// SVGs for obstacles and food
+const ObstacleSVGs = [
+  (color: string) => (<svg width="24" height="24" viewBox="0 0 24 24"><polygon points="12,2 22,12 12,22 2,12" fill={color} /></svg>), // diamond
+  (color: string) => (<svg width="24" height="24" viewBox="0 0 24 24"><polygon points="12,2 15,11 24,11 17,17 19,24 12,20 5,24 7,17 0,11 9,11" fill={color} /></svg>), // star
+  (color: string) => (<svg width="24" height="24" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4" fill={color} /></svg>), // rounded square
+  (color: string) => (<svg width="24" height="24" viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="10" ry="4" fill={color} /></svg>), // ellipse
+  (color: string) => (<svg width="24" height="24" viewBox="0 0 24 24"><polygon points="12,2 22,22 2,22" fill={color} /></svg>), // triangle
+  (color: string) => (<svg width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill={color} /></svg>), // circle
+  (color: string) => (<svg width="24" height="24" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" fill={color} /></svg>), // square
+  (color: string) => (<svg width="24" height="24" viewBox="0 0 24 24"><polygon points="12,2 19,21 5,8 19,8 5,21" fill={color} /></svg>), // abstract
+  (color: string) => (<svg width="24" height="24" viewBox="0 0 24 24"><polygon points="2,12 12,2 22,12 12,22" fill={color} /></svg>), // kite
+  (color: string) => (<svg width="24" height="24" viewBox="0 0 24 24"><polygon points="12,2 22,8 18,22 6,22 2,8" fill={color} /></svg>), // pentagon
+];
+const FoodSVGs = [
+  (color: string) => (<svg width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill={color} /></svg>), // orb
+  (color: string) => (<svg width="24" height="24" viewBox="0 0 24 24"><rect x="8" y="8" width="8" height="8" rx="2" fill={color} /></svg>), // cube
+  (color: string) => (<svg width="24" height="24" viewBox="0 0 24 24"><polygon points="12,2 22,12 12,22 2,12" fill={color} /></svg>), // diamond
+  (color: string) => (<svg width="24" height="24" viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="8" ry="4" fill={color} /></svg>), // ellipse
+  (color: string) => (<svg width="24" height="24" viewBox="0 0 24 24"><polygon points="12,2 19,21 5,8 19,8 5,21" fill={color} /></svg>), // abstract
+  (color: string) => (<svg width="24" height="24" viewBox="0 0 24 24"><polygon points="2,12 12,2 22,12 12,22" fill={color} /></svg>), // kite
+  (color: string) => (<svg width="24" height="24" viewBox="0 0 24 24"><polygon points="12,2 22,8 18,22 6,22 2,8" fill={color} /></svg>), // pentagon
+  (color: string) => (<svg width="24" height="24" viewBox="0 0 24 24"><polygon points="12,2 15,11 24,11 17,17 19,24 12,20 5,24 7,17 0,11 9,11" fill={color} /></svg>), // star
+  (color: string) => (<svg width="24" height="24" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="8" fill={color} /></svg>), // rounded square
+  (color: string) => (<svg width="24" height="24" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" fill={color} /></svg>), // square
+];
+const Backgrounds = [
+  "radial-gradient(circle at 60% 40%, #18181b 0%, #312e81 100%)",
+  "linear-gradient(135deg, #18181b 0%, #27272a 100%)",
+  "radial-gradient(circle, #18181b 60%, #334155 100%)",
+  "linear-gradient(90deg, #18181b 0%, #0f172a 100%)",
+  "linear-gradient(135deg, #18181b 0%, #6366f1 100%)",
+  "radial-gradient(circle, #18181b 60%, #a21caf 100%)",
+  "linear-gradient(135deg, #18181b 0%, #f472b6 100%)",
+  "linear-gradient(90deg, #18181b 0%, #0ea5e9 100%)",
+  "radial-gradient(circle, #18181b 60%, #eab308 100%)",
+  "linear-gradient(135deg, #18181b 0%, #22c55e 100%)",
+];
+const Borders = [
+  "2px solid #312e81",
+  "2px solid #334155",
+  "2px solid #6366f1",
+  "2px solid #a21caf",
+  "2px solid #f472b6",
+  "2px solid #0ea5e9",
+  "2px solid #eab308",
+  "2px solid #22c55e",
+  "2px solid #27272a",
+  "2px solid #18181b",
+];
+const Effects = [
+  "twinkle",
+  "glow",
+  "none",
+  "slow-motion",
+  "color-shift",
+  "particle-burst",
+  "gravity-pull",
+  "blur",
+  "pulse",
+  "shine",
+];
+const ObstacleColors = ["#22c55e", "#eab308", "#a21caf", "#6366f1", "#f472b6", "#0ea5e9", "#334155", "#f59e42", "#f43f5e", "#18181b"];
+const FoodColors = ["#f472b6", "#a21caf", "#6366f1", "#eab308", "#22c55e", "#0ea5e9", "#f59e42", "#f43f5e", "#334155", "#18181b"];
+
+function getRandomTrait<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
 }
 
 export default function SnakeGame({ isPaused, onScoreChange, onRestart, onPauseChange }: SnakeGameProps) {
@@ -32,6 +100,18 @@ export default function SnakeGame({ isPaused, onScoreChange, onRestart, onPauseC
   const [showSupernova, setShowSupernova] = useState(false);
   const [wishingStar, setWishingStar] = useState<{ x: number; y: number } | null>(null);
   const [wishingStarTimer, setWishingStarTimer] = useState<NodeJS.Timeout | null>(null);
+
+  // State for current traits
+  const [currentTraits, setCurrentTraits] = useState({
+    background: "rgba(0,0,0,0.2)",
+    border: "2px solid #22223b",
+    obstacleSVG: ObstacleSVGs[0],
+    obstacleColor: "#22c55e",
+    foodSVG: FoodSVGs[0],
+    foodColor: "#f472b6",
+    effect: "none"
+  });
+  const [wormholeUsed, setWormholeUsed] = useState(false);
 
   // Initialize game
   useEffect(() => {
@@ -221,6 +301,37 @@ export default function SnakeGame({ isPaused, onScoreChange, onRestart, onPauseC
     }
   }, [gameState?.score, onScoreChange]);
 
+  // Detect wormhole teleport and randomize traits
+  useEffect(() => {
+    if (!gameState) return;
+    if (wormholeUsed) {
+      setCurrentTraits({
+        background: getRandomTrait(Backgrounds),
+        border: getRandomTrait(Borders),
+        obstacleSVG: getRandomTrait(ObstacleSVGs),
+        obstacleColor: getRandomTrait(ObstacleColors),
+        foodSVG: getRandomTrait(FoodSVGs),
+        foodColor: getRandomTrait(FoodColors),
+        effect: getRandomTrait(Effects),
+      });
+      setWormholeUsed(false);
+    }
+  }, [wormholeUsed]);
+
+  // Watch for wormhole use (score +3 is our wormhole bonus)
+  useEffect(() => {
+    if (!gameState) return;
+    if (typeof window !== 'undefined') {
+      if (
+        window.__lastWormholeScore !== undefined &&
+        gameState.score === window.__lastWormholeScore + 3
+      ) {
+        setWormholeUsed(true);
+      }
+      window.__lastWormholeScore = gameState.score;
+    }
+  }, [gameState?.score]);
+
   if (isLoading) {
     return (
       <div className="w-full h-full flex items-center justify-center">
@@ -251,10 +362,15 @@ export default function SnakeGame({ isPaused, onScoreChange, onRestart, onPauseC
   return (
     <div className="relative w-full h-full">
       {/* Game board */}
-      <div className="w-full h-full grid bg-black/20" style={{ 
-        gridTemplateColumns: `repeat(${GRID_SIZE_CONST}, ${cellSize})`,
-        gridTemplateRows: `repeat(${GRID_SIZE_CONST}, ${cellSize})`
-      }}>
+      <div
+        className="w-full h-full grid transition-all duration-700"
+        style={{
+          gridTemplateColumns: `repeat(${GRID_SIZE_CONST}, ${cellSize})`,
+          gridTemplateRows: `repeat(${GRID_SIZE_CONST}, ${cellSize})`,
+          background: currentTraits.background,
+          border: currentTraits.border
+        }}
+      >
         {/* Snake */}
         {gameState.snake.map((segment, index) => (
           <motion.div
@@ -288,18 +404,17 @@ export default function SnakeGame({ isPaused, onScoreChange, onRestart, onPauseC
           animate={{ scale: 1 }}
           transition={{ duration: 0.2 }}
         >
-          <div className="absolute inset-0 bg-pink-500 rounded-full animate-pulse-glow" />
-          <div className="absolute inset-0 bg-pink-400 rounded-full blur-sm animate-pulse-glow" />
-          <div className="absolute inset-0 bg-pink-300 rounded-full blur-md animate-pulse-glow" />
-          <div className="absolute inset-0 bg-gradient-to-r from-pink-500/0 via-pink-500/50 to-pink-500/0 transform -rotate-45" />
+          {currentTraits.foodSVG(currentTraits.foodColor)}
         </motion.div>
 
         {/* Obstacles */}
-        {gameState.obstacles.map((obstacle) => {
+        {gameState.obstacles.map((obstacle, i) => {
           const age = Date.now() - obstacle.createdAt;
           const progress = age / obstacle.lifetime;
           const scale = 1 + Math.sin(progress * Math.PI) * 0.2; // Pulse effect
-
+          // Alternate color and SVG for each obstacle
+          const svgFn = currentTraits.obstacleSVG;
+          const color = currentTraits.obstacleColor;
           return (
             <motion.div
               key={`obstacle-${obstacle.position.x}-${obstacle.position.y}-${obstacle.createdAt}`}
@@ -320,28 +435,32 @@ export default function SnakeGame({ isPaused, onScoreChange, onRestart, onPauseC
                 ease: "linear"
               }}
             >
-              {obstacle.type === 'green' && (
-                <>
-                  <div className="absolute inset-0 bg-green-500 rounded-full animate-pulse-glow" />
-                  <div className="absolute inset-0 bg-green-400 rounded-full blur-sm animate-pulse-glow" />
-                  <div className="absolute inset-0 bg-green-300 rounded-full blur-md animate-pulse-glow" />
-                  <div className="absolute inset-0 bg-gradient-to-r from-green-500/0 via-green-500/50 to-green-500/0 transform -rotate-45" />
-                  <div className="absolute inset-0 bg-white rounded-full opacity-20 animate-ping" />
-                </>
-              )}
-              
-              {obstacle.type === 'orange' && (
-                <>
-                  <div className="absolute inset-0 bg-orange-500 rounded-full animate-pulse-glow" />
-                  <div className="absolute inset-0 bg-orange-400 rounded-full blur-sm animate-pulse-glow" />
-                  <div className="absolute inset-0 bg-orange-300 rounded-full blur-md animate-pulse-glow" />
-                  <div className="absolute inset-0 bg-gradient-to-r from-orange-500/0 via-orange-500/50 to-orange-500/0 transform -rotate-45" />
-                  <div className="absolute inset-0 bg-white rounded-full opacity-20 animate-ping" />
-                </>
-              )}
+              {svgFn(color)}
             </motion.div>
           );
         })}
+
+        {/* Wormhole */}
+        {gameState.wormhole && (
+          <motion.div
+            className="relative"
+            style={{
+              gridColumn: gameState.wormhole.x + 1,
+              gridRow: gameState.wormhole.y + 1
+            }}
+            initial={{ scale: 0, rotate: 0, opacity: 0 }}
+            animate={{ scale: [1, 1.2, 1], rotate: 360, opacity: 1 }}
+            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24">
+              <g>
+                <ellipse cx="12" cy="12" rx="10" ry="4" fill="none" stroke="#a21caf" strokeWidth="2" />
+                <ellipse cx="12" cy="12" rx="7" ry="2.5" fill="none" stroke="#c026d3" strokeWidth="2" />
+                <ellipse cx="12" cy="12" rx="4" ry="1.2" fill="none" stroke="#f472b6" strokeWidth="2" />
+              </g>
+            </svg>
+          </motion.div>
+        )}
 
         {/* Wishing Star */}
         {wishingStar && (
